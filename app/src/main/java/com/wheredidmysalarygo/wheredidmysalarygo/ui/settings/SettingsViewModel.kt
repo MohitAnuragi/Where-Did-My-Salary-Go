@@ -5,6 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wheredidmysalarygo.wheredidmysalarygo.data.local.UserPreferencesManager
 import com.wheredidmysalarygo.wheredidmysalarygo.domain.repository.SalaryRepository
+import com.wheredidmysalarygo.wheredidmysalarygo.export.ExportManager
+import com.wheredidmysalarygo.wheredidmysalarygo.export.ExportResult
+import com.wheredidmysalarygo.wheredidmysalarygo.export.SubscriptionPlan
 import com.wheredidmysalarygo.wheredidmysalarygo.utils.CountryConfig
 import com.wheredidmysalarygo.wheredidmysalarygo.utils.CountryConfigProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -29,14 +32,16 @@ data class SettingsUiState(
     val salarySummaryEnabled: Boolean = true,
     val monthEndSnapshotEnabled: Boolean = true,
     val dueDateRemindersEnabled: Boolean = true,
-    val remindDaysBefore: Int = 1
+    val remindDaysBefore: Int = 1,
+    val isExporting: Boolean = false
 )
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val salaryRepository: SalaryRepository,
-    private val userPreferencesManager: UserPreferencesManager
+    private val userPreferencesManager: UserPreferencesManager,
+    private val exportManager: ExportManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -250,6 +255,60 @@ class SettingsViewModel @Inject constructor(
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     errorMessage = "Failed to update reminder days: ${e.message}"
+                )
+            }
+        }
+    }
+
+    /**
+     * Export data to CSV
+     * Enforces subscription plan limits
+     */
+    fun exportData() {
+        viewModelScope.launch {
+            try {
+                _uiState.value = _uiState.value.copy(isExporting = true)
+
+                // Determine subscription plan
+                val subscriptionPlan = if (_uiState.value.isProUser) {
+                    // Get plan from DataStore
+                    val planName = userPreferencesManager.subscriptionPlanFlow.first()
+                    when (planName) {
+                        "PRO_1_MONTH" -> SubscriptionPlan.PRO_1_MONTH
+                        "PRO_6_MONTH" -> SubscriptionPlan.PRO_6_MONTH
+                        "PRO_1_YEAR" -> SubscriptionPlan.PRO_1_YEAR
+                        else -> SubscriptionPlan.PRO_1_MONTH // Default for Pro users
+                    }
+                } else {
+                    SubscriptionPlan.FREE
+                }
+
+                // Export data
+                when (val result = exportManager.exportData(subscriptionPlan)) {
+                    is ExportResult.Success -> {
+                        // Share the file
+                        exportManager.shareFile(result.file)
+                        _uiState.value = _uiState.value.copy(
+                            isExporting = false,
+                            successMessage = "Data exported successfully"
+                        )
+                    }
+                    is ExportResult.Error -> {
+                        _uiState.value = _uiState.value.copy(
+                            isExporting = false,
+                            errorMessage = result.message
+                        )
+                    }
+                    is ExportResult.NotAllowed -> {
+                        exportManager.showUpgradePrompt()
+                        _uiState.value = _uiState.value.copy(isExporting = false)
+                    }
+                }
+
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isExporting = false,
+                    errorMessage = "Export failed: ${e.message}"
                 )
             }
         }

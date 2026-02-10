@@ -27,6 +27,9 @@ class UserPreferencesManager(private val context: Context) {
         // Pro subscription flag (temporary - no real payments yet)
         private val IS_PRO_USER_KEY = booleanPreferencesKey("is_pro_user")
 
+        // Subscription plan for export limits
+        private val SUBSCRIPTION_PLAN_KEY = stringPreferencesKey("subscription_plan")
+
         // Notification settings (Pro only)
         private val NOTIFICATIONS_ENABLED_KEY = booleanPreferencesKey("notifications_enabled")
         private val SALARY_SUMMARY_ENABLED_KEY = booleanPreferencesKey("salary_summary_enabled")
@@ -59,6 +62,12 @@ class UserPreferencesManager(private val context: Context) {
     val isProUserFlow: Flow<Boolean> = context.userPreferencesDataStore.data
         .map { preferences ->
             preferences[IS_PRO_USER_KEY] ?: false
+        }
+
+    // Subscription plan (for export limits)
+    val subscriptionPlanFlow: Flow<String> = context.userPreferencesDataStore.data
+        .map { preferences ->
+            preferences[SUBSCRIPTION_PLAN_KEY] ?: "FREE"
         }
 
     // Notification settings (Pro only)
@@ -119,6 +128,13 @@ class UserPreferencesManager(private val context: Context) {
     suspend fun setProUser(isPro: Boolean) {
         context.userPreferencesDataStore.edit { preferences ->
             preferences[IS_PRO_USER_KEY] = isPro
+        }
+    }
+
+    // Subscription plan (for export limits)
+    suspend fun setSubscriptionPlan(plan: String) {
+        context.userPreferencesDataStore.edit { preferences ->
+            preferences[SUBSCRIPTION_PLAN_KEY] = plan
         }
     }
 
