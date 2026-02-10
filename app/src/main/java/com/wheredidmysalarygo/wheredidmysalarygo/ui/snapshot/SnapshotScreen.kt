@@ -20,6 +20,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wheredidmysalarygo.wheredidmysalarygo.ui.theme.MutedGreen
 import com.wheredidmysalarygo.wheredidmysalarygo.ui.theme.SoftAmber
 import com.wheredidmysalarygo.wheredidmysalarygo.ui.theme.SoftRed
+import com.wheredidmysalarygo.wheredidmysalarygo.utils.CurrencyFormatter
 import com.wheredidmysalarygo.wheredidmysalarygo.utils.CurrencyUtils
 import java.text.SimpleDateFormat
 import java.util.*
@@ -83,7 +84,7 @@ fun SnapshotScreen(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
                 Text(
-                    text = CurrencyUtils.formatCurrency(uiState.salary),
+                    text = CurrencyFormatter.format(uiState.salary, uiState.countryConfig),
                     style = MaterialTheme.typography.displayLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -134,7 +135,7 @@ fun SnapshotScreen(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
                 Text(
-                    text = CurrencyUtils.formatCurrency(uiState.remainingBalance),
+                    text = CurrencyFormatter.format(uiState.remainingBalance, uiState.countryConfig),
                     style = MaterialTheme.typography.displayMedium,
                     fontWeight = FontWeight.Bold,
                     color = if (uiState.remainingBalance > 0) MutedGreen else SoftRed
@@ -375,14 +376,14 @@ fun InsightsSection(uiState: SnapshotUiState) {
             val insights = remember(uiState) {
                 buildList {
                     if (uiState.remainingBalance > 0) {
-                        add("✓ You have ${CurrencyUtils.formatCurrency(uiState.remainingBalance)} free to spend this month")
+                        add("✓ You have ${CurrencyFormatter.format(uiState.remainingBalance, uiState.countryConfig)} free to spend this month")
                     } else {
-                        add("⚠ Your expenses exceed your salary by ${CurrencyUtils.formatCurrency(-uiState.remainingBalance)}")
+                        add("⚠ Your expenses exceed your salary by ${CurrencyFormatter.format(-uiState.remainingBalance, uiState.countryConfig)}")
                     }
 
                     if (uiState.expenseCount > 0) {
                         val avgExpense = uiState.totalExpenses / uiState.expenseCount
-                        add("• Average expense amount: ${CurrencyUtils.formatCurrency(avgExpense)}")
+                        add("• Average expense amount: ${CurrencyFormatter.format(avgExpense, uiState.countryConfig)}")
                     }
 
                     when {

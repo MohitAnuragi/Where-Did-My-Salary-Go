@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.wheredidmysalarygo.wheredidmysalarygo.domain.model.Expense
 import com.wheredidmysalarygo.wheredidmysalarygo.domain.repository.ExpenseRepository
 import com.wheredidmysalarygo.wheredidmysalarygo.domain.repository.SalaryRepository
+import com.wheredidmysalarygo.wheredidmysalarygo.utils.CountryConfig
+import com.wheredidmysalarygo.wheredidmysalarygo.utils.CountryConfigProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import javax.inject.Inject
@@ -16,6 +18,7 @@ data class SnapshotUiState(
     val expenseCount: Int = 0,
     val expenses: List<Expense> = emptyList(),
     val committedPercent: Float = 0f,
+    val countryConfig: CountryConfig = CountryConfigProvider.getConfig("IN"),
     val isLoading: Boolean = true
 )
 
@@ -27,8 +30,9 @@ class SnapshotViewModel @Inject constructor(
 
     val uiState: StateFlow<SnapshotUiState> = combine(
         salaryRepository.getSalary(),
-        expenseRepository.getAllExpenses()
-    ) { salary, expenses ->
+        expenseRepository.getAllExpenses(),
+        salaryRepository.getCountryCode()
+    ) { salary, expenses, countryCode ->
         val totalExpenses = expenses.sumOf { it.amount }
         val remainingBalance = salary - totalExpenses
         val committedPercent = if (salary > 0) {
@@ -44,6 +48,7 @@ class SnapshotViewModel @Inject constructor(
             expenseCount = expenses.size,
             expenses = expenses,
             committedPercent = committedPercent,
+            countryConfig = CountryConfigProvider.getConfig(countryCode),
             isLoading = false
         )
     }.stateIn(

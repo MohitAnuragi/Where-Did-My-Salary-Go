@@ -7,5 +7,7 @@ interface SalaryRepository {
     suspend fun setSalary(amount: Double)
     fun getSalaryCreditDate(): Flow<Int?>
     suspend fun setSalaryCreditDate(date: Int?)
+    fun getCountryCode(): Flow<String>
+    suspend fun setCountryCode(countryCode: String)
 }
 

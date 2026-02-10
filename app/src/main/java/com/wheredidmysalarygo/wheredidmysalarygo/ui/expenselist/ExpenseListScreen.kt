@@ -19,7 +19,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wheredidmysalarygo.wheredidmysalarygo.domain.model.Expense
 import com.wheredidmysalarygo.wheredidmysalarygo.ui.home.HomeViewModel
-import com.wheredidmysalarygo.wheredidmysalarygo.utils.CurrencyUtils
+import com.wheredidmysalarygo.wheredidmysalarygo.utils.CountryConfig
+import com.wheredidmysalarygo.wheredidmysalarygo.utils.CurrencyFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,7 +74,8 @@ fun ExpenseListScreen(
                 item {
                     ExpensesSummaryHeader(
                         totalExpenses = uiState.totalFixedExpenses,
-                        expenseCount = uiState.expenses.size
+                        expenseCount = uiState.expenses.size,
+                        countryConfig = uiState.countryConfig
                     )
                 }
 
@@ -90,6 +92,7 @@ fun ExpenseListScreen(
                     ) { expense ->
                         ExpenseListItem(
                             expense = expense,
+                            countryConfig = uiState.countryConfig,
                             onDelete = { viewModel.deleteExpense(expense) }
                         )
                     }
@@ -106,7 +109,8 @@ fun ExpenseListScreen(
 @Composable
 fun ExpensesSummaryHeader(
     totalExpenses: Double,
-    expenseCount: Int
+    expenseCount: Int,
+    countryConfig: CountryConfig
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -130,7 +134,7 @@ fun ExpensesSummaryHeader(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = CurrencyUtils.formatCurrency(totalExpenses),
+                    text = CurrencyFormatter.format(totalExpenses, countryConfig),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -155,7 +159,8 @@ fun ExpensesSummaryHeader(
 @Composable
 fun ExpenseListItem(
     expense: Expense,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    countryConfig: CountryConfig
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -192,7 +197,7 @@ fun ExpenseListItem(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = CurrencyUtils.formatCurrency(expense.amount),
+                    text = CurrencyFormatter.format(expense.amount, countryConfig),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary

@@ -1,10 +1,14 @@
 package com.wheredidmysalarygo.wheredidmysalarygo.ui.settings
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wheredidmysalarygo.wheredidmysalarygo.data.local.UserPreferencesManager
 import com.wheredidmysalarygo.wheredidmysalarygo.domain.repository.SalaryRepository
+import com.wheredidmysalarygo.wheredidmysalarygo.utils.CountryConfig
+import com.wheredidmysalarygo.wheredidmysalarygo.utils.CountryConfigProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -18,11 +22,19 @@ data class SettingsUiState(
     val isSaving: Boolean = false,
     val errorMessage: String? = null,
     val successMessage: String? = null,
-    val darkMode: Boolean = false
+    val darkMode: Boolean = false,
+    val countryConfig: CountryConfig = CountryConfigProvider.getConfig("IN"),
+    val isProUser: Boolean = false,
+    val notificationsEnabled: Boolean = false,
+    val salarySummaryEnabled: Boolean = true,
+    val monthEndSnapshotEnabled: Boolean = true,
+    val dueDateRemindersEnabled: Boolean = true,
+    val remindDaysBefore: Int = 1
 )
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val salaryRepository: SalaryRepository,
     private val userPreferencesManager: UserPreferencesManager
 ) : ViewModel() {
@@ -39,16 +51,43 @@ class SettingsViewModel @Inject constructor(
             combine(
                 salaryRepository.getSalary(),
                 salaryRepository.getSalaryCreditDate(),
-                userPreferencesManager.darkModeFlow
-            ) { salary, creditDate, darkMode ->
-                _uiState.value = _uiState.value.copy(
+                userPreferencesManager.darkModeFlow,
+                salaryRepository.getCountryCode(),
+                userPreferencesManager.isProUserFlow,
+                userPreferencesManager.notificationsEnabledFlow,
+                userPreferencesManager.salarySummaryEnabledFlow,
+                userPreferencesManager.monthEndSnapshotEnabledFlow,
+                userPreferencesManager.dueDateRemindersEnabledFlow,
+                userPreferencesManager.remindDaysBeforeFlow
+            ) { flows ->
+                val salary = flows[0] as Double
+                val creditDate = flows[1] as Int?
+                val darkMode = flows[2] as Boolean
+                val countryCode = flows[3] as String
+                val isProUser = flows[4] as Boolean
+                val notificationsEnabled = flows[5] as Boolean
+                val salarySummaryEnabled = flows[6] as Boolean
+                val monthEndSnapshotEnabled = flows[7] as Boolean
+                val dueDateRemindersEnabled = flows[8] as Boolean
+                val remindDaysBefore = flows[9] as Int
+
+                SettingsUiState(
                     currentSalary = salary,
                     currentCreditDate = creditDate,
                     salaryInput = salary.toInt().toString(),
                     creditDateInput = creditDate?.toString() ?: "",
-                    darkMode = darkMode
+                    darkMode = darkMode,
+                    countryConfig = CountryConfigProvider.getConfig(countryCode),
+                    isProUser = isProUser,
+                    notificationsEnabled = notificationsEnabled,
+                    salarySummaryEnabled = salarySummaryEnabled,
+                    monthEndSnapshotEnabled = monthEndSnapshotEnabled,
+                    dueDateRemindersEnabled = dueDateRemindersEnabled,
+                    remindDaysBefore = remindDaysBefore
                 )
-            }.collect()
+            }.collect { newState ->
+                _uiState.value = newState
+            }
         }
     }
 
@@ -87,7 +126,6 @@ class SettingsViewModel @Inject constructor(
         val salaryText = _uiState.value.salaryInput.trim()
         val creditDateText = _uiState.value.creditDateInput.trim()
 
-        // Validation
         if (salaryText.isEmpty()) {
             _uiState.value = _uiState.value.copy(errorMessage = "Please enter your monthly salary")
             return
@@ -99,7 +137,6 @@ class SettingsViewModel @Inject constructor(
             return
         }
 
-        // Validate credit date if provided
         val creditDate: Int? = if (creditDateText.isNotEmpty()) {
             val date = creditDateText.toIntOrNull()
             if (date == null || date !in 1..31) {
@@ -111,7 +148,6 @@ class SettingsViewModel @Inject constructor(
             null
         }
 
-        // Save settings
         _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null)
         viewModelScope.launch {
             try {
@@ -148,5 +184,74 @@ class SettingsViewModel @Inject constructor(
             }
         }
     }
-}
 
+    // Pro notification controls (only work if user is Pro)
+    fun toggleNotifications(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                if (!_uiState.value.isProUser) {
+                    _uiState.value = _uiState.value.copy(
+                        errorMessage = "Notifications are a Pro feature. Upgrade to Pro to enable."
+                    )
+                    return@launch
+                }
+
+                userPreferencesManager.setNotificationsEnabled(enabled)
+
+                // TODO: Schedule/cancel notifications based on enabled state
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = "Failed to update notifications: ${e.message}"
+                )
+            }
+        }
+    }
+
+    fun toggleSalarySummary(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                userPreferencesManager.setSalarySummaryEnabled(enabled)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = "Failed to update setting: ${e.message}"
+                )
+            }
+        }
+    }
+
+    fun toggleMonthEndSnapshot(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                userPreferencesManager.setMonthEndSnapshotEnabled(enabled)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = "Failed to update setting: ${e.message}"
+                )
+            }
+        }
+    }
+
+    fun toggleDueDateReminders(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                userPreferencesManager.setDueDateRemindersEnabled(enabled)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = "Failed to update setting: ${e.message}"
+                )
+            }
+        }
+    }
+
+    fun updateRemindDaysBefore(days: Int) {
+        viewModelScope.launch {
+            try {
+                userPreferencesManager.setRemindDaysBefore(days)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = "Failed to update reminder days: ${e.message}"
+                )
+            }
+        }
+    }
+}

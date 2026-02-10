@@ -5,10 +5,14 @@ import androidx.lifecycle.viewModelScope
 import com.wheredidmysalarygo.wheredidmysalarygo.domain.model.Expense
 import com.wheredidmysalarygo.wheredidmysalarygo.domain.model.ExpenseFrequency
 import com.wheredidmysalarygo.wheredidmysalarygo.domain.repository.ExpenseRepository
+import com.wheredidmysalarygo.wheredidmysalarygo.domain.repository.SalaryRepository
+import com.wheredidmysalarygo.wheredidmysalarygo.utils.CountryConfig
+import com.wheredidmysalarygo.wheredidmysalarygo.utils.CountryConfigProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -16,6 +20,7 @@ data class AddExpenseUiState(
     val name: String = "",
     val amount: String = "",
     val dueDate: String = "",
+    val countryConfig: CountryConfig = CountryConfigProvider.getConfig("IN"),
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val successEvent: Boolean = false
@@ -23,11 +28,24 @@ data class AddExpenseUiState(
 
 @HiltViewModel
 class AddExpenseViewModel @Inject constructor(
-    private val expenseRepository: ExpenseRepository
+    private val expenseRepository: ExpenseRepository,
+    private val salaryRepository: SalaryRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AddExpenseUiState())
     val uiState: StateFlow<AddExpenseUiState> = _uiState.asStateFlow()
+
+    init {
+        loadCountryConfig()
+    }
+
+    private fun loadCountryConfig() {
+        viewModelScope.launch {
+            val countryCode = salaryRepository.getCountryCode().first()
+            val countryConfig = CountryConfigProvider.getConfig(countryCode)
+            _uiState.value = _uiState.value.copy(countryConfig = countryConfig)
+        }
+    }
 
     fun onNameChange(name: String) {
         _uiState.value = _uiState.value.copy(

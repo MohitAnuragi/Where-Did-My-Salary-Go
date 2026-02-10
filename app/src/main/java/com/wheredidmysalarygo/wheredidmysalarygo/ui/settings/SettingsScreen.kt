@@ -10,6 +10,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,12 +21,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.wheredidmysalarygo.wheredidmysalarygo.utils.CurrencyUtils
+import com.wheredidmysalarygo.wheredidmysalarygo.utils.CurrencyFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToPro: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -169,40 +171,16 @@ fun SettingsScreen(
                 }
             }
 
-            // Notification Settings (Placeholder for future)
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Reminders",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Coming soon - Get reminders for upcoming expenses",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                        )
-                    }
-                    Switch(
-                        checked = false,
-                        onCheckedChange = null,
-                        enabled = false
-                    )
-                }
-            }
+            // Notification Settings Section (Pro gated)
+            NotificationSettingsSection(
+                uiState = uiState,
+                onToggleNotifications = viewModel::toggleNotifications,
+                onToggleSalarySummary = viewModel::toggleSalarySummary,
+                onToggleMonthEnd = viewModel::toggleMonthEndSnapshot,
+                onToggleDueDateReminders = viewModel::toggleDueDateReminders,
+                onRemindDaysBeforeChange = viewModel::updateRemindDaysBefore,
+                onNavigateToPro = onNavigateToPro
+            )
         }
     }
 }
@@ -246,7 +224,7 @@ fun SalarySettingsSection(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = CurrencyUtils.formatCurrency(uiState.currentSalary),
+                            text = CurrencyFormatter.format(uiState.currentSalary, uiState.countryConfig),
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -290,7 +268,12 @@ fun SalarySettingsSection(
                     value = uiState.salaryInput,
                     onValueChange = onSalaryChange,
                     label = { Text("Monthly Salary") },
-                    leadingIcon = { Text("₹", style = MaterialTheme.typography.titleLarge) },
+                    leadingIcon = {
+                        Text(
+                            uiState.countryConfig.currencySymbol,
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                    },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
                     isError = uiState.errorMessage != null,
@@ -358,3 +341,230 @@ fun SalarySettingsSection(
     }
 }
 
+@Composable
+fun NotificationSettingsSection(
+    uiState: SettingsUiState,
+    onToggleNotifications: (Boolean) -> Unit,
+    onToggleSalarySummary: (Boolean) -> Unit,
+    onToggleMonthEnd: (Boolean) -> Unit,
+    onToggleDueDateReminders: (Boolean) -> Unit,
+    onRemindDaysBeforeChange: (Int) -> Unit,
+    onNavigateToPro: () -> Unit
+) {
+    Text(
+        text = "Notifications",
+        fontSize = 18.sp,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.padding(top = 8.dp)
+    )
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Pro Status / Upgrade Banner
+            if (!uiState.isProUser) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Pro Feature",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Text(
+                                text = "Upgrade to Pro to enable smart notifications",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                            )
+                        }
+                        TextButton(onClick = onNavigateToPro) {
+                            Text("Upgrade")
+                        }
+                    }
+                }
+            } else {
+                // Master Notifications Toggle
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Notifications,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Column {
+                            Text(
+                                text = "Enable notifications",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Event-based reminders (no daily spam)",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+                    Switch(
+                        checked = uiState.notificationsEnabled,
+                        onCheckedChange = onToggleNotifications
+                    )
+                }
+
+                if (uiState.notificationsEnabled) {
+                    HorizontalDivider()
+
+                    // Notification Type Controls
+                    Text(
+                        text = "Notification Types",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+
+                    // Salary Summary
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Salary summary",
+                                fontSize = 15.sp
+                            )
+                            Text(
+                                text = "Notified once when salary arrives",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                        }
+                        Switch(
+                            checked = uiState.salarySummaryEnabled,
+                            onCheckedChange = onToggleSalarySummary,
+                            enabled = uiState.notificationsEnabled
+                        )
+                    }
+
+                    // Month-end Snapshot
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Month-end snapshot",
+                                fontSize = 15.sp
+                            )
+                            Text(
+                                text = "Once on last day of month",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                        }
+                        Switch(
+                            checked = uiState.monthEndSnapshotEnabled,
+                            onCheckedChange = onToggleMonthEnd,
+                            enabled = uiState.notificationsEnabled
+                        )
+                    }
+
+                    // Due Date Reminders
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Due date reminders",
+                                fontSize = 15.sp
+                            )
+                            Text(
+                                text = "Before expenses are due",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                        }
+                        Switch(
+                            checked = uiState.dueDateRemindersEnabled,
+                            onCheckedChange = onToggleDueDateReminders,
+                            enabled = uiState.notificationsEnabled
+                        )
+                    }
+
+                    if (uiState.dueDateRemindersEnabled) {
+                        HorizontalDivider()
+
+                        // Remind days before
+                        Column(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Remind me",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                listOf(1, 2, 3, 5).forEach { days ->
+                                    FilterChip(
+                                        selected = uiState.remindDaysBefore == days,
+                                        onClick = { onRemindDaysBeforeChange(days) },
+                                        label = {
+                                            Text(
+                                                text = if (days == 1) "1 day" else "$days days",
+                                                fontSize = 14.sp
+                                            )
+                                        },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "${uiState.remindDaysBefore} ${if (uiState.remindDaysBefore == 1) "day" else "days"} before due date",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

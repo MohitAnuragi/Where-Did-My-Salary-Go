@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.wheredidmysalarygo.wheredidmysalarygo.domain.model.Expense
 import com.wheredidmysalarygo.wheredidmysalarygo.domain.repository.ExpenseRepository
 import com.wheredidmysalarygo.wheredidmysalarygo.domain.repository.SalaryRepository
+import com.wheredidmysalarygo.wheredidmysalarygo.utils.CountryConfig
+import com.wheredidmysalarygo.wheredidmysalarygo.utils.CountryConfigProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -16,6 +18,7 @@ data class HomeUiState(
     val totalFixedExpenses: Double = 0.0,
     val freeToSpend: Double = 0.0,
     val committedPercent: Float = 0f,
+    val countryConfig: CountryConfig = CountryConfigProvider.getConfig("IN"),
     val isLoading: Boolean = true
 )
 
@@ -36,8 +39,9 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             combine(
                 salaryRepository.getSalary(),
-                expenseRepository.getAllExpenses()
-            ) { salary, expenses ->
+                expenseRepository.getAllExpenses(),
+                salaryRepository.getCountryCode()
+            ) { salary, expenses, countryCode ->
                 val totalFixed = expenses.sumOf { it.amount }
                 val freeToSpend = salary - totalFixed
                 val committedPercent = if (salary > 0) {
@@ -52,6 +56,7 @@ class HomeViewModel @Inject constructor(
                     totalFixedExpenses = totalFixed,
                     freeToSpend = freeToSpend,
                     committedPercent = committedPercent,
+                    countryConfig = CountryConfigProvider.getConfig(countryCode),
                     isLoading = false
                 )
             }.collect { state ->

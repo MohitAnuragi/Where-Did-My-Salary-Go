@@ -110,7 +110,7 @@ fun AddExpenseScreen(
                 placeholder = { Text("0") },
                 leadingIcon = {
                     Text(
-                        "₹",
+                        uiState.countryConfig.currencySymbol,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )

@@ -3,6 +3,8 @@ package com.wheredidmysalarygo.wheredidmysalarygo.ui.onboarding
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wheredidmysalarygo.wheredidmysalarygo.domain.repository.SalaryRepository
+import com.wheredidmysalarygo.wheredidmysalarygo.utils.CountryConfig
+import com.wheredidmysalarygo.wheredidmysalarygo.utils.CountryConfigProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,6 +13,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class OnboardingUiState(
+    val selectedCountry: CountryConfig = CountryConfigProvider.getConfig(CountryConfigProvider.getDefaultCountryCode()),
     val salaryInput: String = "",
     val creditDateInput: String = "",
     val isLoading: Boolean = false,
@@ -29,6 +32,13 @@ class OnboardingViewModel @Inject constructor(
     fun onSalaryInputChange(input: String) {
         _uiState.value = _uiState.value.copy(
             salaryInput = input,
+            errorMessage = null
+        )
+    }
+
+    fun onCountrySelected(countryConfig: CountryConfig) {
+        _uiState.value = _uiState.value.copy(
+            selectedCountry = countryConfig,
             errorMessage = null
         )
     }
@@ -72,6 +82,7 @@ class OnboardingViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(isLoading = true)
         viewModelScope.launch {
             try {
+                salaryRepository.setCountryCode(_uiState.value.selectedCountry.countryCode)
                 salaryRepository.setSalary(salary)
                 if (creditDate != null) {
                     salaryRepository.setSalaryCreditDate(creditDate)
