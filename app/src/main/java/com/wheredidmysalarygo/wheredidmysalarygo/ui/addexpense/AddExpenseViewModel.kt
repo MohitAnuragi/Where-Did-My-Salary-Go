@@ -8,6 +8,7 @@ import com.wheredidmysalarygo.wheredidmysalarygo.domain.repository.ExpenseReposi
 import com.wheredidmysalarygo.wheredidmysalarygo.domain.repository.SalaryRepository
 import com.wheredidmysalarygo.wheredidmysalarygo.utils.CountryConfig
 import com.wheredidmysalarygo.wheredidmysalarygo.utils.CountryConfigProvider
+import com.wheredidmysalarygo.wheredidmysalarygo.utils.MonthInitializer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -111,7 +112,8 @@ class AddExpenseViewModel @Inject constructor(
                     name = name,
                     amount = amount,
                     dueDate = dueDate,
-                    frequency = ExpenseFrequency.MONTHLY
+                    frequency = ExpenseFrequency.MONTHLY,
+                    month = MonthInitializer.getCurrentMonth()
                 )
                 expenseRepository.insertExpense(expense)
                 _uiState.value = _uiState.value.copy(

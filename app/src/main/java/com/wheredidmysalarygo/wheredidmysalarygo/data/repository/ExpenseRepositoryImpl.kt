@@ -50,7 +50,8 @@ class ExpenseRepositoryImpl @Inject constructor(
             name = this.name,
             amount = this.amount,
             dueDate = this.dueDate,
-            frequency = ExpenseFrequency.valueOf(this.frequency)
+            frequency = ExpenseFrequency.valueOf(this.frequency),
+            month = this.month
         )
     }
 
@@ -60,7 +61,8 @@ class ExpenseRepositoryImpl @Inject constructor(
             name = this.name,
             amount = this.amount,
             dueDate = this.dueDate,
-            frequency = this.frequency.name
+            frequency = this.frequency.name,
+            month = this.month
         )
     }
 }

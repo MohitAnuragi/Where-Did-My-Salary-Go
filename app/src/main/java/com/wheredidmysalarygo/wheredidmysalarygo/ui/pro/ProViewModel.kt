@@ -1,130 +1,89 @@
 package com.wheredidmysalarygo.wheredidmysalarygo.ui.pro
 
-import android.content.Context
-import android.os.Build
-import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wheredidmysalarygo.wheredidmysalarygo.data.local.UserPreferencesManager
-import com.wheredidmysalarygo.wheredidmysalarygo.domain.repository.ExpenseRepository
 import com.wheredidmysalarygo.wheredidmysalarygo.domain.repository.SalaryRepository
-import com.wheredidmysalarygo.wheredidmysalarygo.notifications.NotificationScheduler
+import com.wheredidmysalarygo.wheredidmysalarygo.utils.PricingProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+enum class SubscriptionPlanType {
+    ONE_MONTH,
+    SIX_MONTHS,
+    ONE_YEAR,
+    FIVE_YEARS
+}
+
+data class ProUiState(
+    val isProUser: Boolean = false,
+    val selectedPlan: SubscriptionPlanType? = null,
+    val countryCode: String = "IN",
+    val pricing: PricingProvider.PlanPricing = PricingProvider.getPricing("IN"),
+    val isLoading: Boolean = false,
+    val showSuccessToast: Boolean = false
+)
+
 @HiltViewModel
 class ProViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
     private val userPreferencesManager: UserPreferencesManager,
-    private val salaryRepository: SalaryRepository,
-    private val expenseRepository: ExpenseRepository
+    private val salaryRepository: SalaryRepository
 ) : ViewModel() {
 
-    val isProUser: Flow<Boolean> = userPreferencesManager.isProUserFlow
+    private val _uiState = MutableStateFlow(ProUiState())
+    val uiState: StateFlow<ProUiState> = _uiState.asStateFlow()
 
-    /**
-     * Activate Pro subscription (temporary - no real payment)
-     * Shows Toast and enables Pro features
-     */
-    fun activatePro() {
+    init {
+        loadProStatus()
+    }
+
+    private fun loadProStatus() {
         viewModelScope.launch {
-            try {
-                // Set Pro flag
-                userPreferencesManager.setProUser(true)
-
-                // Enable notifications by default
-                userPreferencesManager.setNotificationsEnabled(true)
-
-                // Schedule all Pro notifications
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    scheduleAllNotifications()
-                }
-
-                // Show success toast
-                Toast.makeText(
-                    context,
-                    "Pro subscription enabled",
-                    Toast.LENGTH_SHORT
-                ).show()
-
-            } catch (e: Exception) {
-                Toast.makeText(
-                    context,
-                    "Failed to activate Pro: ${e.message}",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
+            combine(
+                userPreferencesManager.isProUserFlow,
+                salaryRepository.getCountryCode()
+            ) { isProUser, countryCode ->
+                _uiState.value = _uiState.value.copy(
+                    isProUser = isProUser,
+                    countryCode = countryCode,
+                    pricing = PricingProvider.getPricing(countryCode)
+                )
+            }.collect()
         }
     }
 
-    /**
-     * Schedule all Pro notifications based on user data
-     */
-    private suspend fun scheduleAllNotifications() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+    fun selectPlan(plan: SubscriptionPlanType) {
+        _uiState.value = _uiState.value.copy(selectedPlan = plan)
+    }
 
-        try {
-            // Schedule salary summary notification
-            val creditDate = salaryRepository.getSalaryCreditDate().first()
-            if (creditDate != null) {
-                NotificationScheduler.scheduleSalarySummaryNotification(context, creditDate)
+    fun subscribeToPlan(plan: SubscriptionPlanType) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+
+            // Save Pro status
+            userPreferencesManager.setProUser(true)
+
+            // Save selected plan
+            val planName = when (plan) {
+                SubscriptionPlanType.ONE_MONTH -> "PRO_1_MONTH"
+                SubscriptionPlanType.SIX_MONTHS -> "PRO_6_MONTH"
+                SubscriptionPlanType.ONE_YEAR -> "PRO_1_YEAR"
+                SubscriptionPlanType.FIVE_YEARS -> "PRO_5_YEAR"
             }
+            userPreferencesManager.setSubscriptionPlan(planName)
 
-            // Schedule month-end notification
-            NotificationScheduler.scheduleMonthEndNotification(context)
-
-            // Schedule due date reminders for all expenses
-            val expenses = expenseRepository.getAllExpenses().first()
-            val remindDaysBefore = userPreferencesManager.remindDaysBeforeFlow.first()
-
-            expenses.forEach { expense ->
-                if (expense.dueDate != null) {
-                    NotificationScheduler.scheduleDueDateReminder(
-                        context = context,
-                        expenseId = expense.id,
-                        dueDate = expense.dueDate,
-                        daysBeforeReminder = remindDaysBefore
-                    )
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                isProUser = true,
+                showSuccessToast = true
+            )
         }
     }
 
-    /**
-     * Deactivate Pro (for testing purposes)
-     */
-    fun deactivatePro() {
-        viewModelScope.launch {
-            try {
-                // Set Pro flag to false
-                userPreferencesManager.setProUser(false)
-
-                // Disable notifications
-                userPreferencesManager.setNotificationsEnabled(false)
-
-                // Cancel all scheduled notifications
-                NotificationScheduler.cancelAllNotifications(context)
-
-                Toast.makeText(
-                    context,
-                    "Pro subscription deactivated",
-                    Toast.LENGTH_SHORT
-                ).show()
-
-            } catch (e: Exception) {
-                Toast.makeText(
-                    context,
-                    "Failed to deactivate Pro: ${e.message}",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
+    fun dismissToast() {
+        _uiState.value = _uiState.value.copy(showSuccessToast = false)
     }
 }
 

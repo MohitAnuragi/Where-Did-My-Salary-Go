@@ -18,7 +18,8 @@ data class OnboardingUiState(
     val creditDateInput: String = "",
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
-    val navigationEvent: Boolean = false
+    val navigationEvent: Boolean = false,
+    val salaryValidationError: String? = null
 )
 
 @HiltViewModel
@@ -30,10 +31,24 @@ class OnboardingViewModel @Inject constructor(
     val uiState: StateFlow<OnboardingUiState> = _uiState.asStateFlow()
 
     fun onSalaryInputChange(input: String) {
+        val validationError = validateSalaryInput(input)
         _uiState.value = _uiState.value.copy(
             salaryInput = input,
-            errorMessage = null
+            errorMessage = null,
+            salaryValidationError = validationError
         )
+    }
+
+    private fun validateSalaryInput(input: String): String? {
+        if (input.isEmpty()) return null
+
+        val salary = input.toDoubleOrNull() ?: return "Please enter a valid number"
+
+        return when {
+            salary < 500 -> "Salary must be at least ₹500"
+            salary > 100_000_000 -> "Salary cannot exceed ₹10 crore"
+            else -> null
+        }
     }
 
     fun onCountrySelected(countryConfig: CountryConfig) {
@@ -63,6 +78,17 @@ class OnboardingViewModel @Inject constructor(
         val salary = salaryText.toDoubleOrNull()
         if (salary == null || salary <= 0) {
             _uiState.value = _uiState.value.copy(errorMessage = "Please enter a valid salary amount")
+            return
+        }
+
+        // Validate salary range
+        if (salary < 500) {
+            _uiState.value = _uiState.value.copy(errorMessage = "Salary must be at least ₹500")
+            return
+        }
+
+        if (salary > 100_000_000) {
+            _uiState.value = _uiState.value.copy(errorMessage = "Salary cannot exceed ₹10 crore")
             return
         }
 

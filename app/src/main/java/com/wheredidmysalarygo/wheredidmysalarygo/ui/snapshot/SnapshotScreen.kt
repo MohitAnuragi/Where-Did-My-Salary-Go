@@ -6,6 +6,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,13 +27,16 @@ import com.wheredidmysalarygo.wheredidmysalarygo.utils.CurrencyUtils
 import java.text.SimpleDateFormat
 import java.util.*
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SnapshotScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToPro: () -> Unit = {},
     viewModel: SnapshotViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
 
     Scaffold(
         topBar = {
@@ -45,6 +50,56 @@ fun SnapshotScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    if (uiState.isProUser) {
+                        // Pro Badge
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.padding(end = 8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = "Pro",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
+                    } else {
+                        // Go Pro Button
+                        FilledTonalButton(
+                            onClick = onNavigateToPro,
+                            modifier = Modifier.padding(end = 8.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Download,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "data",
+                                color = Color.Blue,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -73,7 +128,7 @@ fun SnapshotScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Month Header
-                CurrentMonthHeader()
+                CurrentMonthHeader(month = uiState.currentMonth)
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -216,11 +271,7 @@ fun ReassuranceMessage(
 }
 
 @Composable
-fun CurrentMonthHeader() {
-    val currentDate = remember {
-        SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(Date())
-    }
-
+fun CurrentMonthHeader(month: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -240,7 +291,7 @@ fun CurrentMonthHeader() {
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = currentDate,
+                text = month,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer

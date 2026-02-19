@@ -1,10 +1,11 @@
 package com.wheredidmysalarygo.wheredidmysalarygo.export
 
 import com.wheredidmysalarygo.wheredidmysalarygo.domain.repository.ExpenseRepository
+import com.wheredidmysalarygo.wheredidmysalarygo.domain.repository.MonthlySummaryRepository
 import com.wheredidmysalarygo.wheredidmysalarygo.domain.repository.SalaryRepository
 import kotlinx.coroutines.flow.first
-import java.text.SimpleDateFormat
-import java.util.*
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 /**
@@ -15,7 +16,8 @@ import javax.inject.Inject
  */
 class ExportRepository @Inject constructor(
     private val salaryRepository: SalaryRepository,
-    private val expenseRepository: ExpenseRepository
+    private val expenseRepository: ExpenseRepository,
+    private val monthlySummaryRepository: MonthlySummaryRepository
 ) {
 
     /**
@@ -29,33 +31,31 @@ class ExportRepository @Inject constructor(
             return emptyList()
         }
 
-        val salary = salaryRepository.getSalary().first()
         val allExpenses = expenseRepository.getAllExpenses().first()
+        val dateFormat = DateTimeFormatter.ofPattern("MMMM yyyy")
+        val monthFormat = DateTimeFormatter.ofPattern("yyyy-MM")
 
-        // Calculate date range (calendar months)
-        val endDate = Calendar.getInstance()
-        val startDate = Calendar.getInstance().apply {
-            add(Calendar.MONTH, -(numberOfMonths - 1))
-            set(Calendar.DAY_OF_MONTH, 1) // Start from 1st of month
+        // Get the list of months to export
+        val monthsToExport = mutableListOf<String>()
+        var currentMonth = YearMonth.now()
+
+        for (i in 0 until numberOfMonths) {
+            monthsToExport.add(currentMonth.format(monthFormat))
+            currentMonth = currentMonth.minusMonths(1)
         }
 
-        // Generate monthly summaries
+        // Build monthly data
         val monthlyData = mutableListOf<MonthlyExportData>()
-        val dateFormat = SimpleDateFormat("MMM yyyy", Locale.getDefault())
 
-        val currentCal = Calendar.getInstance().apply {
-            timeInMillis = startDate.timeInMillis
-        }
+        for (month in monthsToExport) {
+            val monthSummary = monthlySummaryRepository.getMonthlySummary(month).first()
 
-        while (currentCal.timeInMillis <= endDate.timeInMillis) {
-            val monthString = dateFormat.format(currentCal.time)
+            // If month doesn't exist, skip it
+            if (monthSummary == null) continue
 
-            // Calculate totals for this month
-            val totalFixed = allExpenses.sumOf { it.amount }
-            val remaining = salary - totalFixed
+            val monthExpenses = allExpenses.filter { it.month == month }
 
-            // Map expenses to export format
-            val expenseExports = allExpenses.map { expense ->
+            val expenseExports = monthExpenses.map { expense ->
                 ExpenseExportData(
                     name = expense.name,
                     amount = expense.amount,
@@ -63,18 +63,16 @@ class ExportRepository @Inject constructor(
                 )
             }
 
+            val yearMonth = YearMonth.parse(month, monthFormat)
             monthlyData.add(
                 MonthlyExportData(
-                    month = monthString,
-                    salary = salary,
-                    totalFixedExpenses = totalFixed,
-                    remainingAmount = remaining,
+                    month = yearMonth.format(dateFormat),
+                    salary = monthSummary.salaryAmount,
+                    totalFixedExpenses = monthSummary.totalFixedExpenses,
+                    remainingAmount = monthSummary.remainingAmount,
                     expenses = expenseExports
                 )
             )
-
-            // Move to next month
-            currentCal.add(Calendar.MONTH, 1)
         }
 
         return monthlyData

@@ -101,12 +101,27 @@ fun OnboardingScreen(
                 },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
-                isError = uiState.errorMessage != null,
+                isError = uiState.salaryValidationError != null || uiState.errorMessage != null,
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(focusRequester),
                 enabled = !uiState.isLoading,
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                supportingText = {
+                    if (uiState.salaryValidationError != null) {
+                        Text(
+                            text = uiState.salaryValidationError!!,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    } else {
+                        Text(
+                            text = "Between ₹500 and ₹10 crore",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
+                }
             )
 
             Spacer(modifier = Modifier.height(16.dp))

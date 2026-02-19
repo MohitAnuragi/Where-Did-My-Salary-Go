@@ -10,6 +10,7 @@ data class ExpenseEntity(
     val name: String,
     val amount: Double,
     val dueDate: Int, // Day of month (1-31)
-    val frequency: String = "MONTHLY"
+    val frequency: String = "MONTHLY",
+    val month: String // yyyy-MM format (e.g., "2026-02")
 )
 

@@ -8,7 +8,7 @@ import com.wheredidmysalarygo.wheredidmysalarygo.ui.addexpense.AddExpenseScreen
 import com.wheredidmysalarygo.wheredidmysalarygo.ui.expenselist.ExpenseListScreen
 import com.wheredidmysalarygo.wheredidmysalarygo.ui.home.HomeScreen
 import com.wheredidmysalarygo.wheredidmysalarygo.ui.onboarding.OnboardingScreen
-import com.wheredidmysalarygo.wheredidmysalarygo.ui.pro.ProSubscriptionScreen
+import com.wheredidmysalarygo.wheredidmysalarygo.ui.pro.ProScreen
 import com.wheredidmysalarygo.wheredidmysalarygo.ui.settings.SettingsScreen
 import com.wheredidmysalarygo.wheredidmysalarygo.ui.snapshot.SnapshotScreen
 
@@ -75,6 +75,9 @@ fun AppNavGraph(
             SnapshotScreen(
                 onNavigateBack = {
                     navController.popBackStack()
+                },
+                onNavigateToPro = {
+                    navController.navigate(Screen.ProSubscription.route)
                 }
             )
         }
@@ -93,7 +96,7 @@ fun AppNavGraph(
 
         // Pro Subscription Screen
         composable(Screen.ProSubscription.route) {
-            ProSubscriptionScreen(
+            ProScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 }

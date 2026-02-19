@@ -79,11 +79,23 @@ fun HomeScreen(
                         .fillMaxSize()
                         .padding(paddingValues)
                         .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                        .padding(horizontal = 15.dp, vertical = 10.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
-                Spacer(modifier = Modifier.height(8.dp))
+//                Spacer(modifier = Modifier.height(4.dp))
+
+                // Current Month Display
+//                if (uiState.currentMonth.isNotEmpty()) {
+//                    Text(
+//                        text = uiState.currentMonth,
+//                        style = MaterialTheme.typography.titleLarge,
+//                        fontWeight = FontWeight.Bold,
+//                        color = MaterialTheme.colorScheme.onSurface,
+//                        textAlign = TextAlign.Center
+//                    )
+//                    Spacer(modifier = Modifier.height(4.dp))
+//                }
 
                 // HERO CARD - Single Salary Summary (Most Important)
                 HeroSalarySummaryCard(

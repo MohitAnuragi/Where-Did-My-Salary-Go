@@ -7,6 +7,7 @@ import com.wheredidmysalarygo.wheredidmysalarygo.domain.repository.ExpenseReposi
 import com.wheredidmysalarygo.wheredidmysalarygo.domain.repository.SalaryRepository
 import com.wheredidmysalarygo.wheredidmysalarygo.utils.CountryConfig
 import com.wheredidmysalarygo.wheredidmysalarygo.utils.CountryConfigProvider
+import com.wheredidmysalarygo.wheredidmysalarygo.utils.MonthInitializer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import javax.inject.Inject
@@ -19,7 +20,9 @@ data class SnapshotUiState(
     val expenses: List<Expense> = emptyList(),
     val committedPercent: Float = 0f,
     val countryConfig: CountryConfig = CountryConfigProvider.getConfig("IN"),
-    val isLoading: Boolean = true
+    val currentMonth: String = "",
+    val isLoading: Boolean = true,
+    val isProUser: Boolean = false
 )
 
 @HiltViewModel
@@ -32,7 +35,12 @@ class SnapshotViewModel @Inject constructor(
         salaryRepository.getSalary(),
         expenseRepository.getAllExpenses(),
         salaryRepository.getCountryCode()
-    ) { salary, expenses, countryCode ->
+    ) { salary, allExpenses, countryCode ->
+        val currentMonth = MonthInitializer.getCurrentMonth()
+
+        // Filter expenses for current month only
+        val expenses = allExpenses.filter { it.month == currentMonth }
+
         val totalExpenses = expenses.sumOf { it.amount }
         val remainingBalance = salary - totalExpenses
         val committedPercent = if (salary > 0) {
@@ -49,6 +57,7 @@ class SnapshotViewModel @Inject constructor(
             expenses = expenses,
             committedPercent = committedPercent,
             countryConfig = CountryConfigProvider.getConfig(countryCode),
+            currentMonth = MonthInitializer.formatMonthDisplay(currentMonth),
             isLoading = false
         )
     }.stateIn(
