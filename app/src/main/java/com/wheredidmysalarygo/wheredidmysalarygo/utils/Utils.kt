@@ -4,11 +4,9 @@ import java.text.NumberFormat
 import java.util.*
 
 object CurrencyUtils {
-    private val currencyFormatter = NumberFormat.getCurrencyInstance(
-        Locale.Builder().setLanguage("en").setRegion("IN").build()
-    )
-
     fun formatCurrency(amount: Double): String {
+        // Use device's default locale for currency formatting
+        val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.getDefault())
         return currencyFormatter.format(amount)
     }
 }

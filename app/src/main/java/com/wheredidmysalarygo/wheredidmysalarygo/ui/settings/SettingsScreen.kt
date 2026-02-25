@@ -35,6 +35,14 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    // Handle navigation to Pro screen
+    LaunchedEffect(uiState.navigateToProScreen) {
+        if (uiState.navigateToProScreen) {
+            onNavigateToPro()
+            viewModel.onNavigateToProScreenHandled()
+        }
+    }
+
     // Show success snackbar
     LaunchedEffect(uiState.successMessage) {
         if (uiState.successMessage != null) {
@@ -378,7 +386,7 @@ fun SalarySettingsSection(
                     supportingText = {
                         if (uiState.salaryValidationError != null) {
                             Text(
-                                text = uiState.salaryValidationError!!,
+                                text = uiState.salaryValidationError,
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.error
                             )

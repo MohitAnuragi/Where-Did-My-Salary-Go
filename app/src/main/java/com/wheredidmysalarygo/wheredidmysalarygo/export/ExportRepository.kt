@@ -8,24 +8,13 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
-/**
- * ExportRepository - Fetches filtered data from Room based on subscription plan
- *
- * Enforces export range limits
- * Works completely offline
- */
+
 class ExportRepository @Inject constructor(
     private val salaryRepository: SalaryRepository,
     private val expenseRepository: ExpenseRepository,
     private val monthlySummaryRepository: MonthlySummaryRepository
 ) {
 
-    /**
-     * Get export data for the allowed number of months
-     *
-     * @param numberOfMonths How many months to export (based on subscription plan)
-     * @return List of monthly export data, filtered by date range
-     */
     suspend fun getExportData(numberOfMonths: Int): List<MonthlyExportData> {
         if (numberOfMonths <= 0) {
             return emptyList()
@@ -35,7 +24,7 @@ class ExportRepository @Inject constructor(
         val dateFormat = DateTimeFormatter.ofPattern("MMMM yyyy")
         val monthFormat = DateTimeFormatter.ofPattern("yyyy-MM")
 
-        // Get the list of months to export
+
         val monthsToExport = mutableListOf<String>()
         var currentMonth = YearMonth.now()
 

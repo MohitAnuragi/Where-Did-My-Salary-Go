@@ -19,13 +19,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.wheredidmysalarygo.wheredidmysalarygo.ui.settings.SettingsViewModel
 import com.wheredidmysalarygo.wheredidmysalarygo.ui.theme.MutedGreen
-import com.wheredidmysalarygo.wheredidmysalarygo.ui.theme.SoftAmber
 import com.wheredidmysalarygo.wheredidmysalarygo.ui.theme.SoftRed
 import com.wheredidmysalarygo.wheredidmysalarygo.utils.CurrencyFormatter
 import com.wheredidmysalarygo.wheredidmysalarygo.utils.CurrencyUtils
-import java.text.SimpleDateFormat
-import java.util.*
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,7 +31,8 @@ import java.util.*
 fun SnapshotScreen(
     onNavigateBack: () -> Unit,
     onNavigateToPro: () -> Unit = {},
-    viewModel: SnapshotViewModel = hiltViewModel()
+    viewModel: SnapshotViewModel = hiltViewModel(),
+    viewModelSettings: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -53,51 +52,54 @@ fun SnapshotScreen(
                     }
                 },
                 actions = {
-                    if (uiState.isProUser) {
-                        // Pro Badge
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.padding(end = 8.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Star,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Text(
-                                    text = "Pro",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        // Show Pro badge if user is Pro
+//                        if (uiState.isProUser) {
+//                            Surface(
+//                                shape = RoundedCornerShape(10.dp),
+//                                color = MaterialTheme.colorScheme.primaryContainer
+//                            ) {
+//                                Row(
+//                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+//                                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+//                                    verticalAlignment = Alignment.CenterVertically
+//                                ) {
+//                                    Icon(
+//                                        imageVector = Icons.Default.Star,
+//                                        contentDescription = null,
+//                                        tint = MaterialTheme.colorScheme.primary,
+//                                        modifier = Modifier.size(14.dp)
+//                                    )
+//                                    Text(
+//                                        text = "Pro",
+//                                        style = MaterialTheme.typography.labelSmall,
+//                                        fontWeight = FontWeight.Bold,
+//                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+//                                    )
+//                                }
+//                            }
+//                        }
+
+                        // Always show download button
+                        IconButton(
+                            onClick = {
+                                if (uiState.isProUser) {
+                                    // Pro user: Export data
+                                    viewModelSettings.exportData()
+                                } else {
+                                    // Free user: Navigate to Pro screen
+                                    onNavigateToPro()
+                                }
                             }
-                        }
-                    } else {
-                        // Go Pro Button
-                        FilledTonalButton(
-                            onClick = onNavigateToPro,
-                            modifier = Modifier.padding(end = 8.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Download,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "data",
-                                color = Color.Blue,
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.SemiBold
+                                contentDescription = "Export data",
+                                tint = MaterialTheme.colorScheme.primary
                             )
                         }
                     }

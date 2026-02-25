@@ -10,25 +10,14 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.util.concurrent.TimeUnit
 
-/**
- * NotificationScheduler: Manages event-based notifications for Pro users
- *
- * IMPORTANT RULES:
- * - NO daily notifications
- * - Event-based only (salary credit, month-end, due dates)
- * - Only runs for Pro users
- * - All workers are OneTimeWorkRequest (not periodic)
- */
+
 object NotificationScheduler {
 
     private const val SALARY_SUMMARY_WORK = "salary_summary_notification"
     private const val MONTH_END_WORK = "month_end_notification"
     private const val DUE_DATE_PREFIX = "due_date_notification_"
 
-    /**
-     * Schedule salary summary notification for Pro users
-     * Triggers once after salary credit date
-     */
+
     @RequiresApi(Build.VERSION_CODES.O)
     fun scheduleSalarySummaryNotification(context: Context, creditDate: Int) {
         val targetDateTime = calculateNextSalaryCreditDateTime(creditDate)
@@ -56,10 +45,7 @@ object NotificationScheduler {
         )
     }
 
-    /**
-     * Schedule month-end snapshot notification for Pro users
-     * Triggers once on the last day of the month
-     */
+
     @RequiresApi(Build.VERSION_CODES.O)
     fun scheduleMonthEndNotification(context: Context) {
         val targetDateTime = calculateMonthEndDateTime()
@@ -87,10 +73,6 @@ object NotificationScheduler {
         )
     }
 
-    /**
-     * Schedule due date reminder for a specific expense
-     * Triggers X days before the expense is due
-     */
     @RequiresApi(Build.VERSION_CODES.O)
     fun scheduleDueDateReminder(
         context: Context,
@@ -130,9 +112,7 @@ object NotificationScheduler {
         )
     }
 
-    /**
-     * Cancel all notifications (when user disables Pro or notifications)
-     */
+
     fun cancelAllNotifications(context: Context) {
         WorkManager.getInstance(context).apply {
             cancelUniqueWork(SALARY_SUMMARY_WORK)
@@ -141,9 +121,7 @@ object NotificationScheduler {
         }
     }
 
-    /**
-     * Cancel a specific due date reminder
-     */
+
     fun cancelDueDateReminder(context: Context, expenseId: Long) {
         WorkManager.getInstance(context).cancelUniqueWork("$DUE_DATE_PREFIX$expenseId")
     }

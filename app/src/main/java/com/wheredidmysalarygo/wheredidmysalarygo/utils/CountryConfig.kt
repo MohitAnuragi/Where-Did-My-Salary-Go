@@ -1,8 +1,6 @@
 package com.wheredidmysalarygo.wheredidmysalarygo.utils
 
-/**
- * Represents country-specific configuration
- */
+
 data class CountryConfig(
     val countryCode: String,
     val countryName: String,

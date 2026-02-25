@@ -124,12 +124,6 @@ class UserPreferencesManager(private val context: Context) {
         }
     }
 
-    // Pro subscription
-    suspend fun setProUser(isPro: Boolean) {
-        context.userPreferencesDataStore.edit { preferences ->
-            preferences[IS_PRO_USER_KEY] = isPro
-        }
-    }
 
     // Subscription plan (for export limits)
     suspend fun setSubscriptionPlan(plan: String) {

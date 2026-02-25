@@ -10,34 +10,19 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
 
-/**
- * ExportManager - Entry point for data export
- *
- * Responsibilities:
- * - Check subscription status
- * - Coordinate export process
- * - Handle file sharing
- * - Show user feedback
- */
+
 class ExportManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val exportRepository: ExportRepository
 ) {
 
-    /**
-     * Export data based on subscription plan
-     *
-     * @param subscriptionPlan User's current subscription plan
-     * @return Success status
-     */
+
     suspend fun exportData(subscriptionPlan: SubscriptionPlan): ExportResult {
         try {
-            // Check if user can export
             if (subscriptionPlan == SubscriptionPlan.FREE) {
                 return ExportResult.NotAllowed
             }
 
-            // Get data based on plan limits (suspend call, already on background thread)
             val data = withContext(Dispatchers.IO) {
                 exportRepository.getExportData(subscriptionPlan.exportMonths)
             }
@@ -62,11 +47,7 @@ class ExportManager @Inject constructor(
         }
     }
 
-    /**
-     * Share exported file via system share sheet
-     *
-     * @param file The exported CSV file
-     */
+
     suspend fun shareFile(file: File) {
         withContext(Dispatchers.Main) {
             try {
@@ -105,9 +86,7 @@ class ExportManager @Inject constructor(
         }
     }
 
-    /**
-     * Show upgrade prompt for free users
-     */
+
     suspend fun showUpgradePrompt() {
         withContext(Dispatchers.Main) {
             Toast.makeText(

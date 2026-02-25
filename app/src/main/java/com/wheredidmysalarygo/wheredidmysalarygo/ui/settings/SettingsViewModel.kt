@@ -3,6 +3,8 @@ package com.wheredidmysalarygo.wheredidmysalarygo.ui.settings
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.wheredidmysalarygo.wheredidmysalarygo.billing.SubscriptionManager
+import com.wheredidmysalarygo.wheredidmysalarygo.billing.SubscriptionStatus
 import com.wheredidmysalarygo.wheredidmysalarygo.data.local.UserPreferencesManager
 import com.wheredidmysalarygo.wheredidmysalarygo.domain.repository.SalaryRepository
 import com.wheredidmysalarygo.wheredidmysalarygo.export.ExportManager
@@ -34,7 +36,8 @@ data class SettingsUiState(
     val dueDateRemindersEnabled: Boolean = true,
     val remindDaysBefore: Int = 1,
     val isExporting: Boolean = false,
-    val salaryValidationError: String? = null
+    val salaryValidationError: String? = null,
+    val navigateToProScreen: Boolean = false
 )
 
 @HiltViewModel
@@ -42,7 +45,8 @@ class SettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val salaryRepository: SalaryRepository,
     private val userPreferencesManager: UserPreferencesManager,
-    private val exportManager: ExportManager
+    private val exportManager: ExportManager,
+    private val subscriptionManager: SubscriptionManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -59,7 +63,7 @@ class SettingsViewModel @Inject constructor(
                 salaryRepository.getSalaryCreditDate(),
                 userPreferencesManager.darkModeFlow,
                 salaryRepository.getCountryCode(),
-                userPreferencesManager.isProUserFlow,
+                subscriptionManager.subscriptionStatusFlow,
                 userPreferencesManager.notificationsEnabledFlow,
                 userPreferencesManager.salarySummaryEnabledFlow,
                 userPreferencesManager.monthEndSnapshotEnabledFlow,
@@ -70,7 +74,7 @@ class SettingsViewModel @Inject constructor(
                 val creditDate = flows[1] as Int?
                 val darkMode = flows[2] as Boolean
                 val countryCode = flows[3] as String
-                val isProUser = flows[4] as Boolean
+                val subscriptionStatus = flows[4] as SubscriptionStatus
                 val notificationsEnabled = flows[5] as Boolean
                 val salarySummaryEnabled = flows[6] as Boolean
                 val monthEndSnapshotEnabled = flows[7] as Boolean
@@ -84,7 +88,8 @@ class SettingsViewModel @Inject constructor(
                     creditDateInput = creditDate?.toString() ?: "",
                     darkMode = darkMode,
                     countryConfig = CountryConfigProvider.getConfig(countryCode),
-                    isProUser = isProUser,
+                    isProUser = subscriptionStatus == SubscriptionStatus.ACTIVE ||
+                               subscriptionStatus == SubscriptionStatus.CANCELED,
                     notificationsEnabled = notificationsEnabled,
                     salarySummaryEnabled = salarySummaryEnabled,
                     monthEndSnapshotEnabled = monthEndSnapshotEnabled,
@@ -295,18 +300,26 @@ class SettingsViewModel @Inject constructor(
             try {
                 _uiState.value = _uiState.value.copy(isExporting = true)
 
-                // Determine subscription plan
-                val subscriptionPlan = if (_uiState.value.isProUser) {
-                    // Get plan from DataStore
-                    val planName = userPreferencesManager.subscriptionPlanFlow.first()
-                    when (planName) {
-                        "PRO_1_MONTH" -> SubscriptionPlan.PRO_1_MONTH
-                        "PRO_6_MONTH" -> SubscriptionPlan.PRO_6_MONTH
-                        "PRO_1_YEAR" -> SubscriptionPlan.PRO_1_YEAR
-                        else -> SubscriptionPlan.PRO_1_MONTH // Default for Pro users
-                    }
-                } else {
-                    SubscriptionPlan.FREE
+                // Check if user is Pro using SubscriptionManager
+                val isProUser = subscriptionManager.isProUser()
+
+                if (!isProUser) {
+                    // User is not Pro - trigger navigation to Pro screen
+                    _uiState.value = _uiState.value.copy(
+                        isExporting = false,
+                        navigateToProScreen = true
+                    )
+                    return@launch
+                }
+
+                // Get subscription plan from SubscriptionManager
+                val productId = subscriptionManager.getProductId()
+                val subscriptionPlan = when (productId) {
+                    "pro_1_month" -> SubscriptionPlan.PRO_1_MONTH
+                    "pro_3_months" -> SubscriptionPlan.PRO_3_MONTH
+                    "pro_6_months" -> SubscriptionPlan.PRO_6_MONTH
+                    "pro_1_year" -> SubscriptionPlan.PRO_1_YEAR
+                    else -> SubscriptionPlan.PRO_1_MONTH // Default for Pro users
                 }
 
                 // Export data
@@ -339,5 +352,9 @@ class SettingsViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    fun onNavigateToProScreenHandled() {
+        _uiState.value = _uiState.value.copy(navigateToProScreen = false)
     }
 }

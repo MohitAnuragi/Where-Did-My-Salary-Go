@@ -15,13 +15,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
 
-/**
- * SalarySummaryWorker: Sends "Salary is in" notification once per month
- *
- * Triggers: After salary credit date
- * Frequency: Once per month
- * Example: "Your salary is in. ₹16,199 already committed."
- */
+
 @HiltWorker
 class SalarySummaryWorker @AssistedInject constructor(
     @Assisted appContext: Context,

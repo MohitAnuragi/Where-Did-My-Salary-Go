@@ -23,15 +23,9 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         const val DATABASE_NAME = "where_did_my_salary_go_db"
 
-        /**
-         * Migration from version 1 to 2
-         * - Adds 'month' column to expenses table
-         * - Creates monthly_summary table
-         * - Migrates existing expenses to current month
-         */
+
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(database: SupportSQLiteDatabase) {
-                // Get current month in yyyy-MM format
                 val currentMonth = YearMonth.now().format(DateTimeFormatter.ofPattern("yyyy-MM"))
 
                 // Create monthly_summary table

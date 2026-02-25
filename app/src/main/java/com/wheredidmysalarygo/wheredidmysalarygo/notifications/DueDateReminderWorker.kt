@@ -15,13 +15,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
 
-/**
- * DueDateReminderWorker: Sends reminder for specific expense
- *
- * Triggers: X days before expense due date
- * Frequency: Once per expense per month
- * Example: "Rent of ₹10,000 is due tomorrow."
- */
+
 @HiltWorker
 class DueDateReminderWorker @AssistedInject constructor(
     @Assisted appContext: Context,

@@ -1,5 +1,6 @@
 package com.wheredidmysalarygo.wheredidmysalarygo.ui.pro
 
+import android.app.Activity
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
@@ -14,13 +15,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.wheredidmysalarygo.wheredidmysalarygo.utils.PricingProvider
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,16 +32,26 @@ fun ProScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val activity = context as? Activity
+    val scrollState = rememberScrollState()
 
     // Show toast when subscription succeeds
     LaunchedEffect(uiState.showSuccessToast) {
         if (uiState.showSuccessToast) {
             Toast.makeText(
                 context,
-                "Pro subscription enabled",
+                "Thank you for subscribing to Pro!",
                 Toast.LENGTH_SHORT
             ).show()
             viewModel.dismissToast()
+        }
+    }
+
+    // Show error if any
+    uiState.errorMessage?.let { error ->
+        LaunchedEffect(error) {
+            Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+            viewModel.dismissError()
         }
     }
 
@@ -63,37 +75,60 @@ fun ProScreen(
             )
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            // Header Section
-            if (!uiState.isProUser) {
-                HeaderSection()
-            } else {
-                ProUserBadge()
+        if (uiState.isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
             }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .verticalScroll(scrollState)
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                // Header Section
+                if (!uiState.isProUser) {
+                    HeaderSection()
+                } else {
+                    ProUserBadge(currentPlan = uiState.currentProductId)
+                }
 
-            // Pro Features List
-            ProFeaturesList()
+                // Pro Features List
+                ProFeaturesList()
 
-            // Subscription Plans
-            if (!uiState.isProUser) {
-                SubscriptionPlansSection(
-                    selectedPlan = uiState.selectedPlan,
-                    pricing = uiState.pricing,
-                    onPlanSelected = { viewModel.selectPlan(it) },
-                    onSubscribe = { viewModel.subscribeToPlan(it) },
-                    isLoading = uiState.isLoading
-                )
+                // Subscription Plans
+                if (!uiState.isProUser) {
+                    SubscriptionPlansSection(
+                        selectedPlan = uiState.selectedPlan,
+                        plans = uiState.subscriptionPlans,
+                        onPlanSelected = { viewModel.selectPlan(it) },
+                        onSubscribe = { plan ->
+                            activity?.let {
+                                viewModel.subscribeToPlan(it, plan)
+                            }
+                        },
+                        scrollState = scrollState
+                    )
+                } else {
+                    // Show restore button for Pro users
+                    RestorePurchasesButton {
+                        viewModel.restorePurchases()
+                    }
+
+                    // Manage subscriptions link
+                    ManageSubscriptionSection()
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -129,7 +164,7 @@ fun HeaderSection() {
 }
 
 @Composable
-fun ProUserBadge() {
+fun ProUserBadge(currentPlan: String?) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -138,27 +173,50 @@ fun ProUserBadge() {
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(20.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(
-                imageVector = Icons.Default.CheckCircle,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(28.dp)
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = "You are a Pro user",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "You are a Pro user",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+
+            if (currentPlan != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Current Plan: ${formatPlanName(currentPlan)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                )
+            }
         }
+    }
+}
+
+private fun formatPlanName(productId: String): String {
+    return when (productId) {
+        "pro_1_month" -> "1 Month Pro"
+        "pro_3_months" -> "3 Months Pro"
+        "pro_6_months" -> "6 Months Pro"
+        "pro_1_year" -> "1 Year Pro"
+        else -> "Pro"
     }
 }
 
@@ -248,11 +306,20 @@ fun ProFeatureCard(
 @Composable
 fun SubscriptionPlansSection(
     selectedPlan: SubscriptionPlanType?,
-    pricing: PricingProvider.PlanPricing,
+    plans: List<SubscriptionPlan>,
     onPlanSelected: (SubscriptionPlanType) -> Unit,
     onSubscribe: (SubscriptionPlanType) -> Unit,
-    isLoading: Boolean
+    scrollState: androidx.compose.foundation.ScrollState
 ) {
+    var subscribeButtonY by remember { mutableStateOf(0f) }
+
+    // Auto-scroll to Subscribe button when a plan is selected
+    LaunchedEffect(selectedPlan) {
+        if (selectedPlan != null && subscribeButtonY > 0f) {
+            scrollState.animateScrollTo(subscribeButtonY.toInt())
+        }
+    }
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -264,55 +331,39 @@ fun SubscriptionPlansSection(
             color = MaterialTheme.colorScheme.onSurface
         )
 
-        PlanCard(
-            title = "1 Month",
-            price = PricingProvider.formatPrice(pricing.monthlyPrice, pricing.currencySymbol),
-            features = listOf(
-                "All Pro features",
-                "Export last 1 month"
-            ),
-            isSelected = selectedPlan == SubscriptionPlanType.ONE_MONTH,
-            onSelect = { onPlanSelected(SubscriptionPlanType.ONE_MONTH) }
-        )
+        plans.forEach { plan ->
+            val features = when (plan.type) {
+                SubscriptionPlanType.ONE_MONTH -> listOf(
+                    "All Pro features",
+                    "Export last 1 month"
+                )
+                SubscriptionPlanType.THREE_MONTHS -> listOf(
+                    "All Pro features",
+                    "Export last 2 months",
+                    "Save 10%"
+                )
+                SubscriptionPlanType.SIX_MONTHS -> listOf(
+                    "All Pro features",
+                    "Export last 3 months",
+                    "Advanced reminders"
+                )
+                SubscriptionPlanType.ONE_YEAR -> listOf(
+                    "All Pro features",
+                    "Export last 6 months",
+                    "Advanced reminders",
+                    "Best value"
+                )
+            }
 
-        PlanCard(
-            title = "6 Months",
-            price = PricingProvider.formatPrice(pricing.sixMonthPrice, pricing.currencySymbol),
-            features = listOf(
-                "All Pro features",
-                "Export last 3 months",
-                "Advanced reminders"
-            ),
-            isSelected = selectedPlan == SubscriptionPlanType.SIX_MONTHS,
-            onSelect = { onPlanSelected(SubscriptionPlanType.SIX_MONTHS) }
-        )
-
-        PlanCard(
-            title = "1 Year",
-            price = PricingProvider.formatPrice(pricing.yearlyPrice, pricing.currencySymbol),
-            features = listOf(
-                "All Pro features",
-                "Export last 6 months",
-                "Advanced reminders",
-                "Best value"
-            ),
-            isSelected = selectedPlan == SubscriptionPlanType.ONE_YEAR,
-            onSelect = { onPlanSelected(SubscriptionPlanType.ONE_YEAR) },
-            isRecommended = true
-        )
-
-        PlanCard(
-            title = "5 Years",
-            price = PricingProvider.formatPrice(pricing.fiveYearPrice, pricing.currencySymbol),
-            features = listOf(
-                "All Pro features",
-                "Export unlimited",
-                "Advanced reminders",
-                "Lifetime value"
-            ),
-            isSelected = selectedPlan == SubscriptionPlanType.FIVE_YEARS,
-            onSelect = { onPlanSelected(SubscriptionPlanType.FIVE_YEARS) }
-        )
+            PlanCard(
+                title = plan.title,
+                price = plan.price,
+                features = features,
+                isSelected = selectedPlan == plan.type,
+                onSelect = { onPlanSelected(plan.type) },
+                isRecommended = plan.type == SubscriptionPlanType.ONE_YEAR
+            )
+        }
 
         // Subscribe Button
         if (selectedPlan != null) {
@@ -320,25 +371,20 @@ fun SubscriptionPlansSection(
                 onClick = { onSubscribe(selectedPlan) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
-                enabled = !isLoading,
+                    .height(56.dp)
+                    .onGloballyPositioned { coordinates ->
+                        subscribeButtonY = coordinates.positionInParent().y
+                    },
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
                 )
             ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                } else {
-                    Text(
-                        text = "Subscribe Now",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
+                Text(
+                    text = "Subscribe Now",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
     }
@@ -447,3 +493,52 @@ fun PlanCard(
     }
 }
 
+@Composable
+fun RestorePurchasesButton(onRestore: () -> Unit) {
+    OutlinedButton(
+        onClick = onRestore,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+    ) {
+        Icon(
+            imageVector = Icons.Default.Refresh,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text("Restore Purchases")
+    }
+}
+
+@Composable
+fun ManageSubscriptionSection() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Manage Subscription",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "To manage or cancel your subscription, visit Google Play Store subscriptions",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}

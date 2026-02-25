@@ -2,6 +2,9 @@ package com.wheredidmysalarygo.wheredidmysalarygo.ui.snapshot
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.wheredidmysalarygo.wheredidmysalarygo.billing.SubscriptionManager
+import com.wheredidmysalarygo.wheredidmysalarygo.billing.SubscriptionStatus
+import com.wheredidmysalarygo.wheredidmysalarygo.data.local.UserPreferencesManager
 import com.wheredidmysalarygo.wheredidmysalarygo.domain.model.Expense
 import com.wheredidmysalarygo.wheredidmysalarygo.domain.repository.ExpenseRepository
 import com.wheredidmysalarygo.wheredidmysalarygo.domain.repository.SalaryRepository
@@ -28,14 +31,16 @@ data class SnapshotUiState(
 @HiltViewModel
 class SnapshotViewModel @Inject constructor(
     private val salaryRepository: SalaryRepository,
-    private val expenseRepository: ExpenseRepository
+    private val expenseRepository: ExpenseRepository,
+    private val subscriptionManager: SubscriptionManager
 ) : ViewModel() {
 
     val uiState: StateFlow<SnapshotUiState> = combine(
         salaryRepository.getSalary(),
         expenseRepository.getAllExpenses(),
-        salaryRepository.getCountryCode()
-    ) { salary, allExpenses, countryCode ->
+        salaryRepository.getCountryCode(),
+        subscriptionManager.subscriptionStatusFlow
+    ) { salary, allExpenses, countryCode, subscriptionStatus ->
         val currentMonth = MonthInitializer.getCurrentMonth()
 
         // Filter expenses for current month only
@@ -49,6 +54,10 @@ class SnapshotViewModel @Inject constructor(
             0f
         }
 
+        // User is Pro if ACTIVE or CANCELED (still has access until expiry)
+        val isProUser = subscriptionStatus == SubscriptionStatus.ACTIVE ||
+                       subscriptionStatus == SubscriptionStatus.CANCELED
+
         SnapshotUiState(
             salary = salary,
             totalExpenses = totalExpenses,
@@ -58,7 +67,8 @@ class SnapshotViewModel @Inject constructor(
             committedPercent = committedPercent,
             countryConfig = CountryConfigProvider.getConfig(countryCode),
             currentMonth = MonthInitializer.formatMonthDisplay(currentMonth),
-            isLoading = false
+            isLoading = false,
+            isProUser = isProUser
         )
     }.stateIn(
         scope = viewModelScope,

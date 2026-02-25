@@ -15,8 +15,8 @@ android {
         applicationId = "com.wheredidmysalarygo.wheredidmysalarygo"
         minSdk = 24
         targetSdk = 36
-        versionCode = 2
-        versionName = "2.0"
+        versionCode = 4
+        versionName = "4.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -47,7 +47,8 @@ android {
 dependencies {
     // Core library desugaring (for Java Time API on API 24+)
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
-
+// google ads
+//    implementation("com.google.android.gms:play-services-ads:25.0.0")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -82,6 +83,11 @@ dependencies {
     // Lifecycle ViewModel
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
+
+    // Billing Library (using older version compatible with Kotlin 2.0.21)
+    implementation("com.android.billingclient:billing:7.1.1")
+    implementation("com.android.billingclient:billing-ktx:7.1.1")
+
 
     // Testing
     testImplementation(libs.junit)

@@ -1,9 +1,6 @@
 package com.wheredidmysalarygo.wheredidmysalarygo.utils
 
-/**
- * Single source of truth for country-specific configurations
- * Easy to extend by adding new countries
- */
+
 object CountryConfigProvider {
 
     private val configs = mapOf(
@@ -35,7 +32,7 @@ object CountryConfigProvider {
             countryCode = "CA",
             countryName = "Canada",
             currencyCode = "CAD",
-            currencySymbol = "$",
+            currencySymbol = "C$",
             defaultPayFrequency = PayFrequency.BI_WEEKLY,
             expenseExamples = listOf("Rent", "Car Loan", "Netflix", "Utilities", "Groceries")
         ),
@@ -43,36 +40,149 @@ object CountryConfigProvider {
             countryCode = "AU",
             countryName = "Australia",
             currencyCode = "AUD",
-            currencySymbol = "$",
+            currencySymbol = "A$",
             defaultPayFrequency = PayFrequency.BI_WEEKLY,
             expenseExamples = listOf("Rent", "Car Loan", "Netflix", "Utilities", "Groceries")
+        ),
+        "BD" to CountryConfig(
+            countryCode = "BD",
+            countryName = "Bangladesh",
+            currencyCode = "BDT",
+            currencySymbol = "৳",
+            defaultPayFrequency = PayFrequency.MONTHLY,
+            expenseExamples = listOf("Rent", "Loan", "Internet", "Electricity", "Groceries")
+        ),
+        "BR" to CountryConfig(
+            countryCode = "BR",
+            countryName = "Brazil",
+            currencyCode = "BRL",
+            currencySymbol = "R$",
+            defaultPayFrequency = PayFrequency.MONTHLY,
+            expenseExamples = listOf("Aluguel", "Empréstimo", "Netflix", "Luz", "Compras")
+        ),
+        "FR" to CountryConfig(
+            countryCode = "FR",
+            countryName = "France",
+            currencyCode = "EUR",
+            currencySymbol = "€",
+            defaultPayFrequency = PayFrequency.MONTHLY,
+            expenseExamples = listOf("Loyer", "Prêt", "Netflix", "Électricité", "Courses")
+        ),
+        "DE" to CountryConfig(
+            countryCode = "DE",
+            countryName = "Germany",
+            currencyCode = "EUR",
+            currencySymbol = "€",
+            defaultPayFrequency = PayFrequency.MONTHLY,
+            expenseExamples = listOf("Miete", "Kredit", "Netflix", "Strom", "Lebensmittel")
+        ),
+        "IT" to CountryConfig(
+            countryCode = "IT",
+            countryName = "Italy",
+            currencyCode = "EUR",
+            currencySymbol = "€",
+            defaultPayFrequency = PayFrequency.MONTHLY,
+            expenseExamples = listOf("Affitto", "Prestito", "Netflix", "Elettricità", "Spesa")
+        ),
+        "JP" to CountryConfig(
+            countryCode = "JP",
+            countryName = "Japan",
+            currencyCode = "JPY",
+            currencySymbol = "¥",
+            defaultPayFrequency = PayFrequency.MONTHLY,
+            expenseExamples = listOf("Rent", "Loan", "Netflix", "Utilities", "Groceries")
+        ),
+        "MY" to CountryConfig(
+            countryCode = "MY",
+            countryName = "Malaysia",
+            currencyCode = "MYR",
+            currencySymbol = "RM",
+            defaultPayFrequency = PayFrequency.MONTHLY,
+            expenseExamples = listOf("Rent", "Loan", "Netflix", "Utilities", "Groceries")
+        ),
+        "NL" to CountryConfig(
+            countryCode = "NL",
+            countryName = "Netherlands",
+            currencyCode = "EUR",
+            currencySymbol = "€",
+            defaultPayFrequency = PayFrequency.MONTHLY,
+            expenseExamples = listOf("Huur", "Lening", "Netflix", "Energie", "Boodschappen")
+        ),
+        "NZ" to CountryConfig(
+            countryCode = "NZ",
+            countryName = "New Zealand",
+            currencyCode = "NZD",
+            currencySymbol = "NZ$",
+            defaultPayFrequency = PayFrequency.BI_WEEKLY,
+            expenseExamples = listOf("Rent", "Loan", "Netflix", "Utilities", "Groceries")
+        ),
+        "RU" to CountryConfig(
+            countryCode = "RU",
+            countryName = "Russia",
+            currencyCode = "RUB",
+            currencySymbol = "₽",
+            defaultPayFrequency = PayFrequency.MONTHLY,
+            expenseExamples = listOf("Rent", "Loan", "Netflix", "Utilities", "Groceries")
+        ),
+        "SG" to CountryConfig(
+            countryCode = "SG",
+            countryName = "Singapore",
+            currencyCode = "SGD",
+            currencySymbol = "S$",
+            defaultPayFrequency = PayFrequency.MONTHLY,
+            expenseExamples = listOf("Rent", "Loan", "Netflix", "Utilities", "Groceries")
+        ),
+        "ZA" to CountryConfig(
+            countryCode = "ZA",
+            countryName = "South Africa",
+            currencyCode = "ZAR",
+            currencySymbol = "R",
+            defaultPayFrequency = PayFrequency.MONTHLY,
+            expenseExamples = listOf("Rent", "Loan", "Netflix", "Utilities", "Groceries")
+        ),
+        "KR" to CountryConfig(
+            countryCode = "KR",
+            countryName = "South Korea",
+            currencyCode = "KRW",
+            currencySymbol = "₩",
+            defaultPayFrequency = PayFrequency.MONTHLY,
+            expenseExamples = listOf("Rent", "Loan", "Netflix", "Utilities", "Groceries")
+        ),
+        "LK" to CountryConfig(
+            countryCode = "LK",
+            countryName = "Sri Lanka",
+            currencyCode = "LKR",
+            currencySymbol = "Rs",
+            defaultPayFrequency = PayFrequency.MONTHLY,
+            expenseExamples = listOf("Rent", "Loan", "Internet", "Electricity", "Groceries")
+        ),
+        "CH" to CountryConfig(
+            countryCode = "CH",
+            countryName = "Switzerland",
+            currencyCode = "CHF",
+            currencySymbol = "CHF",
+            defaultPayFrequency = PayFrequency.MONTHLY,
+            expenseExamples = listOf("Miete", "Kredit", "Netflix", "Strom", "Lebensmittel")
         )
     )
 
-    /**
-     * Get country configuration by country code
-     * Returns India as default if country not found
-     */
+
     fun getConfig(countryCode: String): CountryConfig {
         return configs[countryCode] ?: configs["IN"]!!
     }
 
-    /**
-     * Get all supported countries
-     */
+
     fun getAllCountries(): List<CountryConfig> {
         return configs.values.toList().sortedBy { it.countryName }
     }
 
-    /**
-     * Get default country based on device locale
-     */
+
     fun getDefaultCountryCode(): String {
         val deviceCountry = java.util.Locale.getDefault().country
         return if (configs.containsKey(deviceCountry)) {
             deviceCountry
         } else {
-            "IN" // Default to India
+            "IN"
         }
     }
 }

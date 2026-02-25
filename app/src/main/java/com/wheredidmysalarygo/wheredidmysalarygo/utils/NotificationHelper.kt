@@ -12,10 +12,7 @@ import androidx.core.content.ContextCompat
 import com.wheredidmysalarygo.wheredidmysalarygo.R
 import com.wheredidmysalarygo.wheredidmysalarygo.domain.model.Expense
 
-/**
- * NotificationHelper: Manages all notification-related functionality
- * Following the principle: "Notifications should feel like a gentle nudge, not a financial alarm"
- */
+
 object NotificationHelper {
 
     private const val CHANNEL_ID = "expense_reminders"
@@ -25,10 +22,7 @@ object NotificationHelper {
     private const val NOTIFICATION_ID_SALARY_SUMMARY = 1001
     private const val NOTIFICATION_ID_MONTH_END = 1002
 
-    /**
-     * Create notification channel (Android 8.0+)
-     * Channel is created with default importance (no sound by default)
-     */
+
     fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -47,14 +41,7 @@ object NotificationHelper {
         }
     }
 
-    /**
-     * Send a gentle reminder notification for an upcoming expense
-     *
-     * @param context Application context
-     * @param expense The expense to remind about
-     * @param currencySymbol Currency symbol to display (e.g., ₹, $, £)
-     * @param daysUntilDue Number of days until the expense is due
-     */
+
     fun sendExpenseReminder(
         context: Context,
         expense: Expense,
@@ -105,14 +92,7 @@ object NotificationHelper {
         }
     }
 
-    /**
-     * Send salary summary notification (Pro feature)
-     * Example: "Your salary is in. ₹16,199 already committed."
-     *
-     * @param context Application context
-     * @param totalCommitted Total amount already committed
-     * @param currencySymbol Currency symbol to display
-     */
+
     fun sendSalarySummaryNotification(
         context: Context,
         totalCommitted: Double,
@@ -151,14 +131,7 @@ object NotificationHelper {
         }
     }
 
-    /**
-     * Send month-end snapshot notification (Pro feature)
-     * Example: "This month, you had ₹23,801 free to spend."
-     *
-     * @param context Application context
-     * @param freeToSpend Amount that was free to spend
-     * @param currencySymbol Currency symbol to display
-     */
+
     fun sendMonthEndNotification(
         context: Context,
         freeToSpend: Double,
@@ -197,9 +170,7 @@ object NotificationHelper {
         }
     }
 
-    /**
-     * Format currency for notification display
-     */
+
     private fun formatCurrencyForNotification(amount: Double, currencySymbol: String): String {
         return if (amount >= 1000) {
             "$currencySymbol${String.format("%,.0f", amount)}"
@@ -208,23 +179,17 @@ object NotificationHelper {
         }
     }
 
-    /**
-     * Cancel a specific notification
-     */
+
     fun cancelNotification(context: Context, expenseId: Long) {
         NotificationManagerCompat.from(context).cancel(expenseId.toInt())
     }
 
-    /**
-     * Cancel all notifications
-     */
+
     fun cancelAllNotifications(context: Context) {
         NotificationManagerCompat.from(context).cancelAll()
     }
 
-    /**
-     * Check if notifications are enabled
-     */
+
     fun areNotificationsEnabled(context: Context): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ContextCompat.checkSelfPermission(

@@ -1,7 +1,10 @@
 package com.wheredidmysalarygo.wheredidmysalarygo.ui.onboarding
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -11,9 +14,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -166,7 +174,16 @@ fun OnboardingScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Privacy Policy Checkbox
+            PrivacyPolicyCheckbox(
+                isChecked = uiState.privacyPolicyAccepted,
+                onCheckedChange = viewModel::onPrivacyPolicyAcceptanceChanged,
+                enabled = !uiState.isLoading
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Continue Button
             Button(
@@ -174,7 +191,7 @@ fun OnboardingScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                enabled = !uiState.isLoading && uiState.salaryInput.isNotEmpty(),
+                enabled = !uiState.isLoading && uiState.salaryInput.isNotEmpty() && uiState.privacyPolicyAccepted,
                 shape = RoundedCornerShape(16.dp),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
             ) {
@@ -260,5 +277,78 @@ fun CountrySelector(
         }
     }
 }
+
+@Composable
+fun PrivacyPolicyCheckbox(
+    isChecked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    enabled: Boolean = true,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val privacyPolicyUrl = "https://sites.google.com/d/16FjtnpQlN8hV_mGrRDMiBGAWQEql0V_A/p/1lbfGK9t0BbZ0rbqY-g3axu8aR34cF5YH/edit"
+
+    // Create annotated string with clickable "Privacy Policy" text
+    val annotatedText = buildAnnotatedString {
+        withStyle(
+            style = SpanStyle(
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                fontSize = 14.sp
+            )
+        ) {
+            append("I agree to the ")
+        }
+
+        pushStringAnnotation(
+            tag = "privacy_policy",
+            annotation = privacyPolicyUrl
+        )
+        withStyle(
+            style = SpanStyle(
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                textDecoration = TextDecoration.Underline
+            )
+        ) {
+            append("Privacy Policy")
+        }
+        pop()
+    }
+
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Start
+    ) {
+        Checkbox(
+            checked = isChecked,
+            onCheckedChange = onCheckedChange,
+            enabled = enabled,
+            colors = CheckboxDefaults.colors(
+                checkedColor = MaterialTheme.colorScheme.primary,
+                uncheckedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        ClickableText(
+            text = annotatedText,
+            onClick = { offset ->
+                annotatedText.getStringAnnotations(
+                    tag = "privacy_policy",
+                    start = offset,
+                    end = offset
+                ).firstOrNull()?.let { annotation ->
+                    // Open privacy policy URL in browser
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(annotation.item))
+                    context.startActivity(intent)
+                }
+            }
+        )
+    }
+}
+
 
 

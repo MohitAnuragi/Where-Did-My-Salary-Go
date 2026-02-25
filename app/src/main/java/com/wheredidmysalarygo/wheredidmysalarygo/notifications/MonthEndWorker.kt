@@ -15,13 +15,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
 
-/**
- * MonthEndWorker: Sends month-end snapshot notification
- *
- * Triggers: Last day of the month
- * Frequency: Once per month
- * Example: "This month, you had ₹23,801 free to spend."
- */
+
 @HiltWorker
 class MonthEndWorker @AssistedInject constructor(
     @Assisted appContext: Context,
