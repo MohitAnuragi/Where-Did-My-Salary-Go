@@ -17,9 +17,6 @@ Built with Kotlin, Jetpack Compose, MVVM, Room, DataStore, WorkManager, and Goog
 - [Data Storage](#data-storage)
 - [Background Work](#background-work)
 - [Privacy Policy](#privacy-policy)
-- [Testing](#testing)
-- [Release Notes for Maintainers](#release-notes-for-maintainers)
-- [Troubleshooting](#troubleshooting)
 
 ## Overview
 
