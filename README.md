@@ -127,7 +127,7 @@ app/src/main/java/com/wheredidmysalarygo/wheredidmysalarygo/
 ### Clone
 
 ```bash
-git clone <your-repo-url>
+git clone <https://github.com/MohitAnuragi/Where-Did-My-Salary-Go.git>
 cd WhereDidMySalaryGo
 ```
 
@@ -223,52 +223,4 @@ Privacy policy URL used in onboarding consent:
 
 - https://sites.google.com/d/16FjtnpQlN8hV_mGrRDMiBGAWQEql0V_A/p/1lbfGK9t0BbZ0rbqY-g3axu8aR34cF5YH/edit
 
-The onboarding flow requires user consent before continuing.
 
-## Testing
-
-Current repository includes baseline template tests:
-
-- Unit test: `app/src/test/.../ExampleUnitTest.kt`
-- Instrumented test: `app/src/androidTest/.../ExampleInstrumentedTest.kt`
-
-Recommended before production:
-
-- Billing lifecycle tests (acknowledge, restore, expire, cancel)
-- Migration tests for Room version upgrades
-- UI tests for onboarding and Pro flows
-- Worker tests for periodic validation behavior
-
-## Release Notes for Maintainers
-
-- Release build enables minification and resource shrinking.
-- WorkManager default initializer is removed in manifest and custom configuration is provided by `WhereDidMySalaryGoApplication`.
-- CSV export uses `FileProvider` with `res/xml/file_paths.xml`.
-
-## Troubleshooting
-
-### Billing prices not appearing
-
-- Confirm products are active in Play Console.
-- Confirm app package and signing match uploaded artifact.
-- Confirm tester account and country availability.
-- Confirm `queryProductDetailsAsync` returns products in logs.
-
-### Billing purchase not restoring
-
-- Verify `queryPurchasesAsync(ProductType.SUBS)` runs after billing connection.
-- Check Play account has an active or canceled-but-valid subscription.
-
-### Build issues with KSP/Hilt
-
-- Run clean build:
-
-```bash
-./gradlew clean :app:assembleDebug
-```
-
-- Re-sync Gradle and ensure Kotlin/KSP versions remain aligned.
-
----
-
-If you are preparing a public release, create a short release checklist in this repository and include billing, migration, and privacy validation sign-off for each version.
