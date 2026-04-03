@@ -2,9 +2,15 @@ package com.wheredidmysalarygo.wheredidmysalarygo.ui.snapshot
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.wheredidmysalarygo.wheredidmysalarygo.billing.SubscriptionManager
+import com.wheredidmysalarygo.wheredidmysalarygo.billing.SubscriptionStatus
+import com.wheredidmysalarygo.wheredidmysalarygo.data.local.UserPreferencesManager
 import com.wheredidmysalarygo.wheredidmysalarygo.domain.model.Expense
 import com.wheredidmysalarygo.wheredidmysalarygo.domain.repository.ExpenseRepository
 import com.wheredidmysalarygo.wheredidmysalarygo.domain.repository.SalaryRepository
+import com.wheredidmysalarygo.wheredidmysalarygo.utils.CountryConfig
+import com.wheredidmysalarygo.wheredidmysalarygo.utils.CountryConfigProvider
+import com.wheredidmysalarygo.wheredidmysalarygo.utils.MonthInitializer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import javax.inject.Inject
@@ -16,19 +22,30 @@ data class SnapshotUiState(
     val expenseCount: Int = 0,
     val expenses: List<Expense> = emptyList(),
     val committedPercent: Float = 0f,
-    val isLoading: Boolean = true
+    val countryConfig: CountryConfig = CountryConfigProvider.getConfig("IN"),
+    val currentMonth: String = "",
+    val isLoading: Boolean = true,
+    val isProUser: Boolean = false
 )
 
 @HiltViewModel
 class SnapshotViewModel @Inject constructor(
     private val salaryRepository: SalaryRepository,
-    private val expenseRepository: ExpenseRepository
+    private val expenseRepository: ExpenseRepository,
+    private val subscriptionManager: SubscriptionManager
 ) : ViewModel() {
 
     val uiState: StateFlow<SnapshotUiState> = combine(
         salaryRepository.getSalary(),
-        expenseRepository.getAllExpenses()
-    ) { salary, expenses ->
+        expenseRepository.getAllExpenses(),
+        salaryRepository.getCountryCode(),
+        subscriptionManager.subscriptionStatusFlow
+    ) { salary, allExpenses, countryCode, subscriptionStatus ->
+        val currentMonth = MonthInitializer.getCurrentMonth()
+
+        // Filter expenses for current month only
+        val expenses = allExpenses.filter { it.month == currentMonth }
+
         val totalExpenses = expenses.sumOf { it.amount }
         val remainingBalance = salary - totalExpenses
         val committedPercent = if (salary > 0) {
@@ -37,6 +54,10 @@ class SnapshotViewModel @Inject constructor(
             0f
         }
 
+        // User is Pro if ACTIVE or CANCELED (still has access until expiry)
+        val isProUser = subscriptionStatus == SubscriptionStatus.ACTIVE ||
+                       subscriptionStatus == SubscriptionStatus.CANCELED
+
         SnapshotUiState(
             salary = salary,
             totalExpenses = totalExpenses,
@@ -44,7 +65,10 @@ class SnapshotViewModel @Inject constructor(
             expenseCount = expenses.size,
             expenses = expenses,
             committedPercent = committedPercent,
-            isLoading = false
+            countryConfig = CountryConfigProvider.getConfig(countryCode),
+            currentMonth = MonthInitializer.formatMonthDisplay(currentMonth),
+            isLoading = false,
+            isProUser = isProUser
         )
     }.stateIn(
         scope = viewModelScope,

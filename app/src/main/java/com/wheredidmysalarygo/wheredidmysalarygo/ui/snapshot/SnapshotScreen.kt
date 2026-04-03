@@ -6,6 +6,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,20 +19,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.wheredidmysalarygo.wheredidmysalarygo.ui.settings.SettingsViewModel
 import com.wheredidmysalarygo.wheredidmysalarygo.ui.theme.MutedGreen
-import com.wheredidmysalarygo.wheredidmysalarygo.ui.theme.SoftAmber
 import com.wheredidmysalarygo.wheredidmysalarygo.ui.theme.SoftRed
+import com.wheredidmysalarygo.wheredidmysalarygo.utils.CurrencyFormatter
 import com.wheredidmysalarygo.wheredidmysalarygo.utils.CurrencyUtils
-import java.text.SimpleDateFormat
-import java.util.*
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SnapshotScreen(
     onNavigateBack: () -> Unit,
-    viewModel: SnapshotViewModel = hiltViewModel()
+    onNavigateToPro: () -> Unit = {},
+    viewModel: SnapshotViewModel = hiltViewModel(),
+    viewModelSettings: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
 
     Scaffold(
         topBar = {
@@ -44,6 +49,59 @@ fun SnapshotScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        // Show Pro badge if user is Pro
+//                        if (uiState.isProUser) {
+//                            Surface(
+//                                shape = RoundedCornerShape(10.dp),
+//                                color = MaterialTheme.colorScheme.primaryContainer
+//                            ) {
+//                                Row(
+//                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+//                                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+//                                    verticalAlignment = Alignment.CenterVertically
+//                                ) {
+//                                    Icon(
+//                                        imageVector = Icons.Default.Star,
+//                                        contentDescription = null,
+//                                        tint = MaterialTheme.colorScheme.primary,
+//                                        modifier = Modifier.size(14.dp)
+//                                    )
+//                                    Text(
+//                                        text = "Pro",
+//                                        style = MaterialTheme.typography.labelSmall,
+//                                        fontWeight = FontWeight.Bold,
+//                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+//                                    )
+//                                }
+//                            }
+//                        }
+
+                        // Always show download button
+                        IconButton(
+                            onClick = {
+                                if (uiState.isProUser) {
+                                    // Pro user: Export data
+                                    viewModelSettings.exportData()
+                                } else {
+                                    // Free user: Navigate to Pro screen
+                                    onNavigateToPro()
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Download,
+                                contentDescription = "Export data",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -72,7 +130,7 @@ fun SnapshotScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Month Header
-                CurrentMonthHeader()
+                CurrentMonthHeader(month = uiState.currentMonth)
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -83,7 +141,7 @@ fun SnapshotScreen(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
                 Text(
-                    text = CurrencyUtils.formatCurrency(uiState.salary),
+                    text = CurrencyFormatter.format(uiState.salary, uiState.countryConfig),
                     style = MaterialTheme.typography.displayLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -134,7 +192,7 @@ fun SnapshotScreen(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
                 Text(
-                    text = CurrencyUtils.formatCurrency(uiState.remainingBalance),
+                    text = CurrencyFormatter.format(uiState.remainingBalance, uiState.countryConfig),
                     style = MaterialTheme.typography.displayMedium,
                     fontWeight = FontWeight.Bold,
                     color = if (uiState.remainingBalance > 0) MutedGreen else SoftRed
@@ -215,11 +273,7 @@ fun ReassuranceMessage(
 }
 
 @Composable
-fun CurrentMonthHeader() {
-    val currentDate = remember {
-        SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(Date())
-    }
-
+fun CurrentMonthHeader(month: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -239,7 +293,7 @@ fun CurrentMonthHeader() {
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = currentDate,
+                text = month,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -375,14 +429,14 @@ fun InsightsSection(uiState: SnapshotUiState) {
             val insights = remember(uiState) {
                 buildList {
                     if (uiState.remainingBalance > 0) {
-                        add("✓ You have ${CurrencyUtils.formatCurrency(uiState.remainingBalance)} free to spend this month")
+                        add("✓ You have ${CurrencyFormatter.format(uiState.remainingBalance, uiState.countryConfig)} free to spend this month")
                     } else {
-                        add("⚠ Your expenses exceed your salary by ${CurrencyUtils.formatCurrency(-uiState.remainingBalance)}")
+                        add("⚠ Your expenses exceed your salary by ${CurrencyFormatter.format(-uiState.remainingBalance, uiState.countryConfig)}")
                     }
 
                     if (uiState.expenseCount > 0) {
                         val avgExpense = uiState.totalExpenses / uiState.expenseCount
-                        add("• Average expense amount: ${CurrencyUtils.formatCurrency(avgExpense)}")
+                        add("• Average expense amount: ${CurrencyFormatter.format(avgExpense, uiState.countryConfig)}")
                     }
 
                     when {

@@ -1,21 +1,32 @@
 package com.wheredidmysalarygo.wheredidmysalarygo.ui.onboarding
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.wheredidmysalarygo.wheredidmysalarygo.utils.CountryConfigProvider
 
 @Composable
 fun OnboardingScreen(
@@ -74,27 +85,51 @@ fun OnboardingScreen(
 
             Spacer(modifier = Modifier.height(48.dp))
 
+            // Country Selector
+            CountrySelector(
+                selectedCountry = uiState.selectedCountry,
+                onCountrySelected = viewModel::onCountrySelected,
+                enabled = !uiState.isLoading
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
             // Salary Input
             OutlinedTextField(
                 value = uiState.salaryInput,
                 onValueChange = viewModel::onSalaryInputChange,
-                label = { Text("Monthly Salary") },
+                label = { Text("Monthly Income") },
                 placeholder = { Text("40000") },
                 leadingIcon = {
                     Text(
-                        "₹",
+                        uiState.selectedCountry.currencySymbol,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                 },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
-                isError = uiState.errorMessage != null,
+                isError = uiState.salaryValidationError != null || uiState.errorMessage != null,
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(focusRequester),
                 enabled = !uiState.isLoading,
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                supportingText = {
+                    if (uiState.salaryValidationError != null) {
+                        Text(
+                            text = uiState.salaryValidationError!!,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    } else {
+                        Text(
+                            text = "Between ₹500 and ₹10 crore",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
+                }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -139,7 +174,16 @@ fun OnboardingScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Privacy Policy Checkbox
+            PrivacyPolicyCheckbox(
+                isChecked = uiState.privacyPolicyAccepted,
+                onCheckedChange = viewModel::onPrivacyPolicyAcceptanceChanged,
+                enabled = !uiState.isLoading
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Continue Button
             Button(
@@ -147,7 +191,7 @@ fun OnboardingScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                enabled = !uiState.isLoading && uiState.salaryInput.isNotEmpty(),
+                enabled = !uiState.isLoading && uiState.salaryInput.isNotEmpty() && uiState.privacyPolicyAccepted,
                 shape = RoundedCornerShape(16.dp),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
             ) {
@@ -179,4 +223,132 @@ fun OnboardingScreen(
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CountrySelector(
+    selectedCountry: com.wheredidmysalarygo.wheredidmysalarygo.utils.CountryConfig,
+    onCountrySelected: (com.wheredidmysalarygo.wheredidmysalarygo.utils.CountryConfig) -> Unit,
+    enabled: Boolean = true,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val countries = remember { CountryConfigProvider.getAllCountries() }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { if (enabled) expanded = !expanded },
+        modifier = modifier.fillMaxWidth()
+    ) {
+        OutlinedTextField(
+            value = "${selectedCountry.countryName} (${selectedCountry.currencySymbol})",
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Country") },
+            trailingIcon = {
+                Icon(
+                    imageVector = Icons.Default.ArrowDropDown,
+                    contentDescription = "Select country"
+                )
+            },
+            enabled = enabled,
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(),
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors()
+        )
+
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            countries.forEach { country ->
+                DropdownMenuItem(
+                    text = {
+                        Text("${country.countryName} (${country.currencySymbol})")
+                    },
+                    onClick = {
+                        onCountrySelected(country)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun PrivacyPolicyCheckbox(
+    isChecked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    enabled: Boolean = true,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val privacyPolicyUrl = "https://sites.google.com/d/16FjtnpQlN8hV_mGrRDMiBGAWQEql0V_A/p/1lbfGK9t0BbZ0rbqY-g3axu8aR34cF5YH/edit"
+
+    // Create annotated string with clickable "Privacy Policy" text
+    val annotatedText = buildAnnotatedString {
+        withStyle(
+            style = SpanStyle(
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                fontSize = 14.sp
+            )
+        ) {
+            append("I agree to the ")
+        }
+
+        pushStringAnnotation(
+            tag = "privacy_policy",
+            annotation = privacyPolicyUrl
+        )
+        withStyle(
+            style = SpanStyle(
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                textDecoration = TextDecoration.Underline
+            )
+        ) {
+            append("Privacy Policy")
+        }
+        pop()
+    }
+
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Start
+    ) {
+        Checkbox(
+            checked = isChecked,
+            onCheckedChange = onCheckedChange,
+            enabled = enabled,
+            colors = CheckboxDefaults.colors(
+                checkedColor = MaterialTheme.colorScheme.primary,
+                uncheckedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        ClickableText(
+            text = annotatedText,
+            onClick = { offset ->
+                annotatedText.getStringAnnotations(
+                    tag = "privacy_policy",
+                    start = offset,
+                    end = offset
+                ).firstOrNull()?.let { annotation ->
+                    // Open privacy policy URL in browser
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(annotation.item))
+                    context.startActivity(intent)
+                }
+            }
+        )
+    }
+}
+
+
 

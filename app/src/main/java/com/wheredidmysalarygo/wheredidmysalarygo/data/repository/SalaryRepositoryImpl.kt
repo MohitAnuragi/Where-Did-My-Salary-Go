@@ -24,5 +24,13 @@ class SalaryRepositoryImpl @Inject constructor(
     override suspend fun setSalaryCreditDate(date: Int?) {
         userPreferencesManager.setSalaryCreditDate(date)
     }
+
+    override fun getCountryCode(): Flow<String> {
+        return userPreferencesManager.countryCodeFlow
+    }
+
+    override suspend fun setCountryCode(countryCode: String) {
+        userPreferencesManager.setCountryCode(countryCode)
+    }
 }
 

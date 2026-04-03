@@ -24,7 +24,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wheredidmysalarygo.wheredidmysalarygo.ui.theme.MutedGreen
 import com.wheredidmysalarygo.wheredidmysalarygo.ui.theme.SoftAmber
 import com.wheredidmysalarygo.wheredidmysalarygo.ui.theme.SoftRed
-import com.wheredidmysalarygo.wheredidmysalarygo.utils.CurrencyUtils
+import com.wheredidmysalarygo.wheredidmysalarygo.utils.CurrencyFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,18 +79,31 @@ fun HomeScreen(
                         .fillMaxSize()
                         .padding(paddingValues)
                         .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                        .padding(horizontal = 15.dp, vertical = 10.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
-                Spacer(modifier = Modifier.height(8.dp))
+//                Spacer(modifier = Modifier.height(4.dp))
+
+                // Current Month Display
+//                if (uiState.currentMonth.isNotEmpty()) {
+//                    Text(
+//                        text = uiState.currentMonth,
+//                        style = MaterialTheme.typography.titleLarge,
+//                        fontWeight = FontWeight.Bold,
+//                        color = MaterialTheme.colorScheme.onSurface,
+//                        textAlign = TextAlign.Center
+//                    )
+//                    Spacer(modifier = Modifier.height(4.dp))
+//                }
 
                 // HERO CARD - Single Salary Summary (Most Important)
                 HeroSalarySummaryCard(
                     salary = uiState.salary,
                     totalFixed = uiState.totalFixedExpenses,
                     freeToSpend = uiState.freeToSpend,
-                    committedPercent = uiState.committedPercent
+                    committedPercent = uiState.committedPercent,
+                    countryConfig = uiState.countryConfig
                 )
 
                 // Commitment Message
@@ -159,7 +172,8 @@ fun HeroSalarySummaryCard(
     salary: Double,
     totalFixed: Double,
     freeToSpend: Double,
-    committedPercent: Float
+    committedPercent: Float,
+    countryConfig: com.wheredidmysalarygo.wheredidmysalarygo.utils.CountryConfig
 ) {
     // Determine color based on free percentage (Calm colors only)
     val freePercent = 100f - committedPercent
@@ -195,7 +209,7 @@ fun HeroSalarySummaryCard(
 
             // BIG NUMBER - Dominates the card
             Text(
-                text = CurrencyUtils.formatCurrency(freeToSpend),
+                text = CurrencyFormatter.format(freeToSpend, countryConfig),
                 style = MaterialTheme.typography.displayMedium,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
@@ -227,7 +241,7 @@ fun HeroSalarySummaryCard(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = CurrencyUtils.formatCurrency(salary),
+                        text = CurrencyFormatter.format(salary, countryConfig),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White
@@ -243,7 +257,7 @@ fun HeroSalarySummaryCard(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = CurrencyUtils.formatCurrency(totalFixed),
+                        text = CurrencyFormatter.format(totalFixed, countryConfig),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White

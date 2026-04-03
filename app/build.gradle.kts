@@ -15,15 +15,16 @@ android {
         applicationId = "com.wheredidmysalarygo.wheredidmysalarygo"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 6
+        versionName = "6.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -33,6 +34,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        isCoreLibraryDesugaringEnabled = true
     }
     kotlinOptions {
         jvmTarget = "11"
@@ -43,6 +45,10 @@ android {
 }
 
 dependencies {
+    // Core library desugaring (for Java Time API on API 24+)
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+// google ads
+//    implementation("com.google.android.gms:play-services-ads:25.0.0")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -71,11 +77,17 @@ dependencies {
     // WorkManager
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.hilt.work)
+    ksp("androidx.hilt:hilt-compiler:1.2.0")
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
 
     // Lifecycle ViewModel
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
+
+    // Billing Library (using older version compatible with Kotlin 2.0.21)
+    implementation("com.android.billingclient:billing:7.1.1")
+    implementation("com.android.billingclient:billing-ktx:7.1.1")
+
 
     // Testing
     testImplementation(libs.junit)

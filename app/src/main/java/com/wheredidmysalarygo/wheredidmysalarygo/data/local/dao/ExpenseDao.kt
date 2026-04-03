@@ -10,6 +10,9 @@ interface ExpenseDao {
     @Query("SELECT * FROM expenses ORDER BY dueDate ASC")
     fun getAllExpenses(): Flow<List<ExpenseEntity>>
 
+    @Query("SELECT * FROM expenses WHERE month = :month ORDER BY dueDate ASC")
+    fun getExpensesByMonth(month: String): Flow<List<ExpenseEntity>>
+
     @Query("SELECT * FROM expenses WHERE id = :expenseId")
     suspend fun getExpenseById(expenseId: Long): ExpenseEntity?
 
@@ -27,5 +30,8 @@ interface ExpenseDao {
 
     @Query("SELECT SUM(amount) FROM expenses")
     fun getTotalExpensesFlow(): Flow<Double?>
+
+    @Query("SELECT SUM(amount) FROM expenses WHERE month = :month")
+    fun getTotalExpensesByMonth(month: String): Flow<Double?>
 }
 
