@@ -127,7 +127,7 @@ app/src/main/java/com/wheredidmysalarygo/wheredidmysalarygo/
 ### Clone
 
 ```bash
-git clone <https://github.com/MohitAnuragi/Where-Did-My-Salary-Go.git>
+git clone https://github.com/MohitAnuragi/Where-Did-My-Salary-Go.git
 cd WhereDidMySalaryGo
 ```
 
